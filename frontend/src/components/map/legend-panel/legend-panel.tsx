@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 
-import styles from '../Map.module.css';
+import styles from '../map.module.css';
 import { MAP_TEXTS } from '../map.constant';
 
 // LegendPanel.tsx

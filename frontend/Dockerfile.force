@@ -1,0 +1,38 @@
+# Принудительное решение проблемы rollup в контейнере
+FROM node:20-slim as build
+
+WORKDIR /app
+
+# Установка необходимых инструментов
+RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
+
+# Копирование package.json
+COPY package.json ./
+
+# Принудительная установка зависимостей
+RUN npm install --legacy-peer-deps --no-audit --no-fund
+
+# Принудительная переустановка rollup и его бинариев
+RUN echo "=== Принудительная установка rollup бинариев ===" && \
+    npm uninstall rollup @rollup/rollup-linux-x64-gnu || true && \
+    npm install rollup@latest --force && \
+    npm install @rollup/rollup-linux-x64-gnu@latest --force && \
+    echo "=== Rollup бинарии установлены ==="
+
+# Проверка работы rollup
+RUN echo "=== Проверяем rollup ===" && \
+    node -e "const rollup = require('rollup'); console.log('Rollup:', rollup.VERSION || 'OK');"
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка приложения
+RUN echo "=== Начинаем сборку ===" && \
+    npm run build && \
+    echo "=== Сборка завершена ==="
+
+# Serve stage
+FROM nginx:alpine as serve
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

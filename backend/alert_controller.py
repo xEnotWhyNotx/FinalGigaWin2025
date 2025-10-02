@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
+from small_leakage_model import analyze_leakage_with_consumption_data
+
 # Используем загрузчик данных и симулятор из consumption_loader.py
 from consumption_loader import load_data, get_consumption_for_period_unom, get_consumption_for_period_ctp
 
@@ -516,8 +518,6 @@ async def check_alert_condition_5(unom: int, ctp_id: str, consumption_df: pd.Dat
     Использует оптимизированную модель из small_leakage_model.py
     """
     try:
-        # Импортируем функцию анализа утечек
-        from small_leakage_model import analyze_leakage_with_consumption_data
         
         start_time = alert_time - timedelta(hours=CONFIG['event_duration_threshold'])
         

@@ -727,6 +727,36 @@ def get_users():
     except Exception as e:
         return jsonify({'error': 'Ошибка получения списка пользователей'}), 500
 
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint для Docker"""
+    try:
+        # Проверяем, что основные компоненты загружены
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'consumption_data': consumption_df is not None,
+            'ctp_data': ctp_to_unom_map is not None,
+            'geojson_data': geojson_data is not None,
+            'models_loaded': True  # Модели загружаются при импорте модулей
+        }
+        
+        # Проверяем базовую функциональность
+        if consumption_df is None or ctp_to_unom_map is None:
+            health_status['status'] = 'unhealthy'
+            health_status['error'] = 'Critical data not loaded'
+            return jsonify(health_status), 503
+        
+        return jsonify(health_status), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 503
+
+
 if __name__ == '__main__':
     # Setting debug=True enables auto-reloading and provides helpful error messages
     app.run(debug=True, port=5001)

@@ -17,10 +17,12 @@ RUN mkdir -p /app/data
 COPY app.py .
 COPY alert_controller.py .
 COPY consumption_loader.py .
+COPY small_leakage_model.py .
 COPY user_auth.py .
 COPY alert_integration.py .
 COPY telegram_bot.py .
 COPY telegram_commands.py .
+COPY models/ ./models/
 COPY data/ ./data/
 
 # 6. Make port 5001 available to the world outside this container

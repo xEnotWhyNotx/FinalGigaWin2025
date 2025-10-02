@@ -1,0 +1,36 @@
+# Dockerfile с явным исправлением rollup проблемы
+FROM node:20-bullseye as build
+
+WORKDIR /app
+
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Установка pnpm для лучшей работы с dependencies
+RUN npm install -g pnpm
+
+# Копирование package.json
+COPY package.json ./
+
+# Установка зависимостей через pnpm
+RUN pnpm install --legacy-peer-deps
+
+# Принудительное исправление rollup проблемы
+RUN cd node_modules/rollup && \
+    npm install @rollup/rollup-linux-x64-gnu --no-save && \
+    cd ../..
+
+# Проверка работы rollup
+RUN node -e "console.log('Rollup OK:', require.resolve('rollup'))"
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка приложения
+RUN pnpm build
+
+# Serve stage
+FROM nginx:alpine as serve
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

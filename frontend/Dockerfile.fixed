@@ -1,0 +1,38 @@
+# Исправленный Dockerfile для работы с rollup бинариями
+FROM node:20-slim as build
+
+WORKDIR /app
+
+# Установка необходимых инструментов
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Копирование package.json
+COPY package.json ./
+
+# Настройка npm
+RUN npm config set progress false
+RUN npm config set fund false
+RUN npm config set audit false
+
+# Установка зависимостей без optional флаг (который вызывает проблемы)
+RUN echo "=== Устанавливаем зависимости ===" && \
+    npm install --legacy-peer-deps --no-audit --no-fund --production=false
+
+# Проверка установки rollup
+RUN echo "=== Проверяем rollup ===" && \
+    node -e "console.log('Rollup доступен:', require.resolve('rollup'))" && \
+    ls -la node_modules/rollup/lib/
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка приложения
+RUN echo "=== Начинаем сборку ===" && \
+    npm run build && \
+    echo "=== Сборка завершена ==="
+
+# Serve stage
+FROM nginx:alpine as serve
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

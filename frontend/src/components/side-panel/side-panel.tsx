@@ -277,7 +277,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   <AccountTreeIcon color="success" />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Тепловые сети" 
+                  primary="Сети ГВС" 
                   secondary={`${stats.pipes} объектов`}
                 />
                 <Switch
@@ -346,7 +346,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   borderRadius={1}
                 />
                 <Typography variant="body2">
-                  Тепловые сети
+                  Сети ГВС
                 </Typography>
               </Box>
             </Stack>

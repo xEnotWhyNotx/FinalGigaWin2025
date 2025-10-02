@@ -1,0 +1,32 @@
+# Debug Dockerfile для frontend - только проверка установки npm зависимостей
+FROM node:20-alpine
+
+# Установка инструментов для отладки
+RUN apk add --no-cache curl wget
+
+WORKDIR /app
+
+# Показать версии
+RUN echo "Node version:" && node --version
+RUN echo "NPM version:" && npm --version
+
+# Копирование package.json
+COPY package.json ./
+
+# Анализ зависимостей
+RUN echo "=== Анализируем package.json ===" && \
+    cat package.json && \
+    echo "=== Конец package.json ==="
+
+# Попытка установки с максимальным логированием
+RUN echo "=== Начинаем установку зависимостей ===" && \
+    npm install --legacy-peer-deps --verbose --no-fund --no-audit --progress=false && \
+    echo "=== Установка завершена успешно ==="
+
+# Показать установленные пакеты
+RUN echo "=== Установленные пакеты ===" && \
+    npm list --depth=0
+
+# Показать размер node_modules
+RUN echo "=== Размер node_modules ===" && \
+    du -sh node_modules

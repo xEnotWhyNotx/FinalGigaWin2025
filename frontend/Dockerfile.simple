@@ -1,0 +1,22 @@
+# Самое простое решение - использование официального образа Vite
+FROM cypress/browsers:node20.19.5-chrome-unsafe-headless as build
+
+WORKDIR /app
+
+# Копирование package.json
+COPY package.json ./
+
+# Установка зависимостей (этот образ обычно работает с бинарными модулями)
+RUN npm install --legacy-peer-deps
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка
+RUN npm run build
+
+# Serve stage
+FROM nginx:alpine as serve
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

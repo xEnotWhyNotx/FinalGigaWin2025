@@ -53,8 +53,9 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
 
   const chartData = data.timestamp.map((timestamp, index) => ({
     timestamp,
-    Прогноз: data.predicted[index],
-    Факт: data.real[index],
+    // МЕНЯЕМ МЕСТАМИ: теперь predicted становится "Факт", а real становится "Прогноз"
+    Факт: data.predicted[index], // бывший predicted
+    Прогноз: data.real[index],   // бывший real
     // Форматируем время - берем только часы
     time: new Date(timestamp.replace(' ', 'T')).getHours().toString().padStart(2, '0'),
   }));
@@ -88,20 +89,22 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
               labelFormatter={(label) => `Время: ${label}:00`}
             />
             <Legend verticalAlign="top" height={36}/>
+            {/* Теперь "Прогноз" использует данные из data.real */}
             <Line
               type="monotone"
               dataKey="Прогноз"
-              stroke="#8884d8"
+              stroke="#82ca9d"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
             />
+            {/* Теперь "Факт" использует данные из data.predicted */}
             <Line
               type="monotone"
               dataKey="Факт"
-              stroke="#82ca9d"
+              stroke="#8884d8"
               strokeWidth={2}
-              dot={{ fill: '#82ca9d', strokeWidth: 1, r: 2 }}
+              dot={{ fill: '#8884d8', strokeWidth: 1, r: 2 }}
               activeDot={{ r: 4 }}
             />
           </LineChart>

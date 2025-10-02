@@ -1,32 +1,84 @@
 # GigaWin2025
-Second hackathon (LCT) 2025
+Система мониторинга водоснабжения с использованием Telegram бота
 
-## How to run the project
+## Описание проекта
 
-This project runs a standalone backend service using Docker and Docker Compose.
+GigaWin2025 - это система мониторинга и прогнозирования утечек воды в системе водоснабжения Москвы, включающая в себя:
 
-### Prerequisites
+- **Backend API** (Flask) - основной сервер для обработки данных и API
+- **Frontend** (React + TypeScript) - веб-интерфейс для визуализации данных
+- **Telegram Bot** - бот для получения уведомлений об авариях
+- **Nginx** - обратный прокси для объединения компонентов
 
-*   Docker
-*   Docker Compose
+## Архитектура системы
 
-### Running the application
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Telegram Bot   │    │   Nginx Proxy   │
+│   (Port 80)     │    │   (Background)   │    │   (Port 8080)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌────────────────────┐
+                    │   Backend API      │
+                    │   (Port 5001)      │
+                    └────────────────────┘
+```
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd GigaWin2025
-    ```
+## Установка и запуск
 
-2.  **Build and start the service:**
-    Run the following command in the root directory of the project:
-    ```bash
-    docker-compose up --build -d
-    ```
-    This command will build the Docker image for the backend service and start the container in the background.
+### Предварительные требования
 
-3.  **Access the application:**
-    The backend API will be available at `http://localhost:5001`.
+- Docker
+- Docker Compose
+
+### Быстрый запуск
+
+```bash
+# Клонирование репозитория
+git clone <repository-url>
+cd GigaWin2025
+
+# Запуск всех сервисов
+make start
+# или альтернативно:
+docker-compose up --build -d
+```
+
+### Доступные команды
+
+Используйте `make help` для просмотра всех доступных команд:
+
+```bash
+# Основные команды
+make build          # Собрать все контейнеры
+make start          # Запустить все сервисы
+make stop           # Остановить сервисы
+make restart        # Перезапустить сервисы
+make logs           # Показать логи
+make status         # Проверить статус
+
+# Индивидуальные сервисы
+make start-backend   # Только backend
+make start-frontend  # Только frontend
+make start-telegram  # Только telegram bot
+make logs-backend    # Логи backend
+make logs-telegram   # Логи telegram bot
+
+# Режим разработки
+make dev            # Запуск с пересборкой для разработки
+make clean          # Полная очистка контейнеров и образов
+```
+
+## Доступ к сервисам
+
+После запуска услуги доступны по следующим адресам:
+
+- **Frontend (React)** - http://localhost:80
+- **Backend API** - http://localhost:5001
+- **Nginx Proxy** - http://localhost:8080
+- **Telegram Bot** - работает в фоновом режиме
 
 ### API Endpoints
 

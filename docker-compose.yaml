@@ -1,10 +1,98 @@
 version: '3.8'
 
 services:
+  # Backend Flask API
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     container_name: gigawin-backend
     ports:
       - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+    volumes:
+      - ./backend/data:/app/data
+      - ./configs:/app/configs
     restart: unless-stopped
+    networks:
+      - gigawin-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Telegram Bot
+  telegram-bot:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile.telegram
+    container_name: gigawin-telegram-bot
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend/data:/app/data
+      - ./configs:/app/configs
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - gigawin-network
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gigawin-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - gigawin-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Debug (для тестирования установки зависимостей)
+  frontend-debug:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.debug
+    container_name: gigawin-frontend-debug
+    profiles:
+      - debug  # Запускается только при указании профиля debug
+
+  # Nginx Reverse Proxy (optional, for production)
+  nginx:
+    image: nginx:alpine
+    container_name: gigawin-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigawin-network
+    profiles:
+      - production  # Запускается только при указании профиля production
+
+networks:
+  gigawin-network:
+    driver: bridge

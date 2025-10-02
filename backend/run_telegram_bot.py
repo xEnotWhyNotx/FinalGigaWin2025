@@ -24,16 +24,31 @@ logger = logging.getLogger(__name__)
 
 def load_config():
     """Загрузка конфигурации бота"""
-    config_path = Path(__file__).parent.parent / 'configs' / 'telegram_config.json'
+    # Возможные пути к конфигурации, проверяем по порядку
+    possible_paths = [
+        Path('/app/configs/telegram_config.json'),  # Docker контейнер путь
+        Path(__file__).parent.parent / 'configs' / 'telegram_config.json',  # Локальный путь
+        Path(__file__).parent / 'configs' / 'telegram_config.json',  # Альтернативный локальный путь
+    ]
+    
+    config_path = None
+    for path in possible_paths:
+        if path.exists():
+            config_path = path
+            break
+    
+    if not config_path:
+        logger.error(f"Файл конфигурации не найден ни в одном из путей:")
+        for path in possible_paths:
+            logger.error(f"  - {path}")
+        logger.error("Создайте файл configs/telegram_config.json с токеном бота")
+        return None
     
     try:
+        logger.info(f"Загружаем конфигурацию из: {config_path}")
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         return config
-    except FileNotFoundError:
-        logger.error(f"Файл конфигурации не найден: {config_path}")
-        logger.error("Создайте файл configs/telegram_config.json с токеном бота")
-        return None
     except json.JSONDecodeError as e:
         logger.error(f"Ошибка в формате файла конфигурации: {e}")
         return None
@@ -42,15 +57,42 @@ def main():
     """Главная функция"""
     logger.info("Запуск Telegram бота...")
     
+    # Проверяем, не запущен ли уже бот (защита от нескольких экземпляров)
+    import fcntl
+    import sys
+    
+    # Попытка создать lock файл
+    lock_file_path = "/tmp/telegram_bot.lock"
+    try:
+        lock_fd = open(lock_file_path, 'w')
+        fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_fd.write(str(os.getpid()))
+        lock_fd.flush()
+        logger.info(f"Заблокирован процесс бота с PID {os.getpid()}")
+    except IOError:
+        logger.error("Telegram бот уже запущен в другом процессе!")
+        logger.error("Закройте предыдущий экземпляр перед запуском нового")
+        return
+    
     # Загружаем конфигурацию
     config = load_config()
     if not config:
+        try:
+            lock_fd.close()
+            os.unlink(lock_file_path)
+        except:
+            pass
         return
     
     bot_token = config.get('bot_token')
     if not bot_token or bot_token == "YOUR_BOT_TOKEN_HERE":
         logger.error("Токен бота не настроен в конфигурации")
         logger.error("Установите токен в файле configs/telegram_config.json")
+        try:
+            lock_fd.close()
+            os.unlink(lock_file_path)
+        except:
+            pass
         return
     
     api_base_url = config.get('api_base_url', 'http://localhost:5001')
@@ -106,6 +148,14 @@ def main():
         logger.info("Получен сигнал остановки")
     except Exception as e:
         logger.error(f"Ошибка при запуске бота: {e}")
+    finally:
+        # Освобождаем lock файл
+        try:
+            lock_fd.close()
+            os.unlink(lock_file_path)
+            logger.info("Освобожден lock файл процесса")
+        except:
+            pass
 
 if __name__ == '__main__':
     try:
