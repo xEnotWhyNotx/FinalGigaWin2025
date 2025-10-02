@@ -1,0 +1,92 @@
+services:
+  # Backend Flask API с HTTPS
+  backend:
+    image: gigawin2025-backend:latest
+    container_name: gigawin-backend
+    expose:
+      - "5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - SSL_ENABLED=true
+      - CORS_ALLOWED_ORIGINS=https://gigawin.unicorns-group.ru,https://10.8.0.17:3017,https://10.8.0.17,https://localhost:3017,https://localhost
+    volumes:
+      - backend_data:/app/data
+      - configs_volume:/app/configs
+    restart: unless-stopped
+    networks:
+      - gigawin-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('https://localhost:5001/health', verify=False).raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend React App
+  frontend:
+    image: gigawin2025-frontend:latest
+    container_name: gigawin-frontend
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - gigawin-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy (HTTP, SSL handled by external proxy)
+  nginx:
+    image: gigawin2025-nginx:latest
+    container_name: gigawin-nginx
+    ports:
+      - "3017:443"        # Маппинг для внешнего прокси на порт 443 контейнера
+      - "3080:80"         # Дополнительный HTTP порт
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - gigawin-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Telegram Bot с HTTPS backend
+  telegram-bot:
+    image: gigawin2025-telegram-bot:latest
+    container_name: gigawin-telegram-bot
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - DATA_PATH=/app/data
+      - CONFIGS_PATH=/app/configs
+      - HTTPS_BACKEND_URL=https://backend:5001
+      - SSL_VERIFY=false
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - gigawin-network
+
+networks:
+  gigawin-network:
+    driver: bridge
+
+volumes:
+  backend_data:
+    driver: local
+  configs_volume:
+    driver: local

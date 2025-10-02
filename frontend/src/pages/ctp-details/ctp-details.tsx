@@ -38,6 +38,8 @@ import { WaterConsumptionChart } from '../../components/charts/water-consumption
 import { createCTPBalloonContent } from '../../components/map/map.utils';
 import { useSelector } from 'react-redux';
 
+import image from '../../../public/tech.png'
+
 interface Properties {
   address?: string;
   name?: string;
@@ -91,6 +93,7 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
   console.log('📅 Using timestamp:', timestamp);
   console.log('📅 From store:', timestampFromStore);
   console.log('📅 Fallback:', fallbackTimestamp);
+
 
   const handleBack = () => {
     navigate(-1);
@@ -230,7 +233,7 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
           <LocalFireDepartment sx={{ fontSize: 40 }} />
           <Box flex={1}>
             <Typography variant="h4" fontWeight="bold">
-              ЦТП {ctpData.ctp_id}
+              ЦТП {ctpId}
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.9 }}>
               {properties.name || properties.address || 'Тепловой пункт'}
@@ -350,7 +353,7 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
               <Speed color="secondary" />
               <Typography variant="h6" fontWeight="bold">
-                Характеристика системы
+                QH-характеристика
               </Typography>
             </Stack>
             <PressureChart data={ctpData.pressure_data} />
@@ -464,6 +467,9 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
               </Box>
             </Stack>
           </Grid>
+          {/* <Grid>
+            <img src={image}/>
+          </Grid> */}
         </Grid>
       </Paper>
     </Box>

@@ -1,0 +1,6 @@
+{
+  "bot_token": "5677930100:AAG8BzMciBM1DvQvWdk6X66AYezXWsZ3vVw",
+  "api_base_url": "https://backend:5001",
+  "check_interval_seconds": 300,
+  "max_alerts_per_message": 5
+}

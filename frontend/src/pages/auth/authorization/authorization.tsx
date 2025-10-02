@@ -20,7 +20,7 @@ import toast from 'react-hot-toast';
 
 import { AUTH_TEXTS } from './authorization.constant';
 import { useAuthorization } from './authorization.hook';
-import styles from './Authorization.module.css';
+import styles from './authorization.module.css';
 
 export const Authorization: React.FC = () => {
   const {  

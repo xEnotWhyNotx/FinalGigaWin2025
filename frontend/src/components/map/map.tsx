@@ -5,7 +5,7 @@ import { YMaps, Map } from '@pbe/react-yandex-maps';
 
 import type { YandexMapProps, GeoJSONFeature } from '../../shared/types/map.types'; // Добавил GeoJSONFeature
 
-import styles from './Map.module.css';
+import styles from './map.module.css';
 import { MAP_CONSTANTS } from './map.constant';
 import { useMap } from './map-hook';
 import { HousesLayer } from './houses-layer/houses-layer';

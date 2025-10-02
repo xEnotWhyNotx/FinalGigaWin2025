@@ -9,14 +9,14 @@ import asyncio
 from datetime import datetime
 from catboost import CatBoostClassifier
 from typing import Dict, Any
-from backend import consumption_loader as cl
+import consumption_loader as cl
 
 
 print("Загрузка данных и модели...")
 ctp_to_unom_map, consumption_df, excedents_df = cl.load_data()
 
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-model_path = os.path.join(base_dir, 'backend', 'models', 'catboost_model.cbm')
+base_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(base_dir, 'models', 'catboost_model.cbm')
 model = CatBoostClassifier()
 model.load_model(model_path)
 print("Данные и модель загружены!")

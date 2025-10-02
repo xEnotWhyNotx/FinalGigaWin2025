@@ -114,39 +114,6 @@ def simulate_real_consumption(predicted_series, noise_level=0.02, unom: Optional
     
     return simulated.clip(lower=0)
 
-def simulate_real_consumption_ctp(summed_consumption_series, noise_level=0.00, ctp_name: Optional[str] = None,
-                                start_ts=None, end_ts=None, excedents_df=None):
-    """
-    Добавляет дополнительный системный шум к суммарному потреблению ЦТП и утечки.
-    Добавляет утечки для CTP если данные об утечках предоставлены.
-    
-    Поддерживаемые типы изменений:
-    - Полное отключение: значение '-' в CSV → расход = 0
-    - Изменение расхода: числовое значение в CSV (м³/ч) → добавляется к расходу
-    """
-    # Set seed for deterministic results based on ctp_name and timestamp
-    if ctp_name is not None and start_ts is not None:
-        seed = hash(str(ctp_name) + str(start_ts)) % (2**32)
-        np.random.seed(seed)
-    
-    noise = np.random.normal(loc=0, scale=summed_consumption_series * noise_level)
-    simulated = summed_consumption_series + noise
-    
-    # Добавляем утечку для CTP
-    if ctp_name is not None and excedents_df is not None and not excedents_df.empty:
-        # Применяем утечку к каждой точке временного ряда
-        for timestamp in simulated.index:
-            leakage_rate = get_leakage_rate_for_timestamp(ctp_name, 'ctp', timestamp, excedents_df)
-            
-            if leakage_rate == -1:
-                # Полное отключение (расход = 0)
-                simulated.loc[timestamp] = 0.0
-            elif leakage_rate != 0:
-                # Добавляем скорость изменения расхода (может быть положительной или отрицательной)
-                simulated.loc[timestamp] += leakage_rate
-    
-    return simulated.clip(lower=0)
-
 async def get_consumption_for_period_unom(unom_id, start_ts, end_ts, df, noise_level=0.025, excedents_df=None):
     """
     Возвращает прогнозируемый и симулированный расход для UNOM за определенный период времени.
@@ -167,7 +134,7 @@ async def get_consumption_for_period_unom(unom_id, start_ts, end_ts, df, noise_l
     result_df = pd.DataFrame({'прогноз': predicted, 'реальный': simulated})
     return result_df
 
-async def get_consumption_for_period_ctp(ctp_id, start_ts, end_ts, df, ctp_map, noise_level=0.05, excedents_df=None):
+async def get_consumption_for_period_ctp(ctp_id, start_ts, end_ts, df, ctp_map, noise_level=0.015, excedents_df=None):
     """
     Возвращает прогнозируемый и симулированный расход для ЦТП, используя get_consumption_for_period_unom.
     """
@@ -189,10 +156,17 @@ async def get_consumption_for_period_ctp(ctp_id, start_ts, end_ts, df, ctp_map, 
     combined_df = pd.concat(valid_dfs)
     total_consumption_df = combined_df.groupby(combined_df.index).sum()
 
-    # Применяем дополнительный шум на уровне ЦТП
-    total_consumption_df['реальный'] = simulate_real_consumption_ctp(
-        total_consumption_df['реальный'], ctp_name=ctp_id, start_ts=start_ts, end_ts=end_ts, excedents_df=excedents_df
-    )
+    # Применяем утечки на уровне ЦТП к прогнозному расходу
+    if excedents_df is not None and not excedents_df.empty:
+        for timestamp in total_consumption_df.index:
+            leakage_rate = get_leakage_rate_for_timestamp(ctp_id, 'ctp', timestamp, excedents_df)
+            
+            if leakage_rate == -1:
+                # Полное отключение (расход = 0)
+                total_consumption_df.loc[timestamp, 'реальный'] = 0.0
+            elif leakage_rate != 0:
+                # Добавляем утечку ЦТП к реальному расходу
+                total_consumption_df.loc[timestamp, 'реальный'] += leakage_rate
 
     return total_consumption_df
 
@@ -232,7 +206,12 @@ async def build_ctp_pressure_payload(ctp_id, end_ts, result_df, ctp_points_df):
     x_point = currect_cons
     y_point = np.polyval(h_poly_coefs, currect_cons / pumps_working).round(1)
 
-    pipe_cfc = np.polyfit([x_point, 0], [y_point, source_pressure], deg=2)
+    # Добавляем проверку для предотвращения плохо обусловленной полиномиальной регрессии
+    try:
+        pipe_cfc = np.polyfit([x_point, 0], [y_point, source_pressure], deg=2)
+    except np.linalg.LinAlgError:
+        # Если полиномиальная регрессия неудачна, используем линейную интерполяцию
+        pipe_cfc = np.polyfit([x_point, 0], [y_point, source_pressure], deg=1)
 
     pipe_Q = np.linspace(0, x_point, 21)
     pipe_H = np.polyval(pipe_cfc, pipe_Q)

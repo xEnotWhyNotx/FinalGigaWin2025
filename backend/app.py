@@ -16,7 +16,35 @@ from functools import wraps
 
 
 app = Flask(__name__)
-CORS(app)  # Включаем CORS для всех доменов
+
+# Настройка CORS для работы через nginx с HTTPS
+# Получаем список разрешенных источников из переменной окружения или используем по умолчанию
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if cors_origins_env:
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+else:
+    # Production HTTPS origins - только безопасные соединения
+    cors_origins = [
+        "https://gigawin.unicorns-group.ru",
+        "https://10.8.0.17:3017",
+        "https://10.8.0.17",
+        "https://localhost:3000",  # Локальная разработка с HTTPS
+        "https://localhost:5001",
+        "http://localhost:3000",   # Локальная разработка
+        "http://localhost:5001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5001",
+    ]
+
+print(f"[CORS] Allowed Origins: {cors_origins}")
+
+# Настройка CORS с поддержкой credentials для авторизации
+CORS(app, 
+     origins=cors_origins, 
+     supports_credentials=True, 
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"], 
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     expose_headers=["Content-Type", "Authorization"])
 
 
 # --- Load data once on startup ---
@@ -134,7 +162,7 @@ def ctp_data():
 
     try:
         end_ts = pd.to_datetime(timestamp_str)
-        end_ts = end_ts.floor('H')
+        end_ts = end_ts.floor('h')
     except Exception:
         return jsonify({"error": "Invalid timestamp format. Use ISO format like YYYY-MM-DDTHH:MM:SS"}), 400
 
@@ -164,7 +192,7 @@ def ctp_data_pressure():
 
     try:
         end_ts = pd.to_datetime(timestamp_str)
-        end_ts = end_ts.floor('H')
+        end_ts = end_ts.floor('h')
     except Exception:
         return jsonify({"error": "Invalid timestamp format. Use ISO format like YYYY-MM-DDTHH:MM:SS"}), 400
 
@@ -188,7 +216,7 @@ def mcd_data():
 
     try:
         end_ts = pd.to_datetime(timestamp_str)
-        end_ts = end_ts.floor('H')
+        end_ts = end_ts.floor('h')
     except Exception:
         return jsonify({"error": "Invalid timestamp format. Use ISO format like YYYY-MM-DDTHH:MM:SS"}), 400
 
@@ -727,6 +755,41 @@ def get_users():
     except Exception as e:
         return jsonify({'error': 'Ошибка получения списка пользователей'}), 500
 
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint для Docker"""
+    try:
+        # Проверяем, что основные компоненты загружены
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'consumption_data': consumption_df is not None,
+            'ctp_data': ctp_to_unom_map is not None,
+            'geojson_data': geojson_data is not None,
+            'models_loaded': True  # Модели загружаются при импорте модулей
+        }
+        
+        # Проверяем базовую функциональность
+        if consumption_df is None or ctp_to_unom_map is None:
+            health_status['status'] = 'unhealthy'
+            health_status['error'] = 'Critical data not loaded'
+            return jsonify(health_status), 503
+        
+        return jsonify(health_status), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 503
+
+
 if __name__ == '__main__':
-    # Setting debug=True enables auto-reloading and provides helpful error messages
-    app.run(debug=True, port=5001)
+    # Для Docker контейнера нужно слушать на всех интерфейсах
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_PORT', 5001))
+    debug = os.getenv('FLASK_ENV', 'production') == 'development'
+    
+    print(f"Запуск Flask сервера на {host}:{port}, debug={debug}")
+    app.run(host=host, port=port, debug=debug)

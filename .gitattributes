@@ -1,0 +1,9 @@
+# Git Large File Storage
+*.db filter=lfs diff=lfs merge=lfs -text
+*.cbm filter=lfs diff=lfs merge=lfs -text
+*.geojson filter=lfs diff=lfs merge=lfs -text
+# Additional large files
+backend/data/hak2025.db filter=lfs diff=lfs merge=lfs -text
+backend/data/users.db filter=lfs diff=lfs merge=lfs -text
+backend/models/catboost_model.cbm filter=lfs diff=lfs merge=lfs -text
+frontend/public/data/new-data/*.geojson filter=lfs diff=lfs merge=lfs -text

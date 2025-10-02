@@ -1,22 +1,37 @@
-# Stage 1: Build the React application
-FROM node:18-alpine as build
+# Build stage
+FROM node:18-alpine as builder
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+# Копируем файлы зависимостей
+COPY package*.json ./
+COPY tsconfig*.json ./
 
+# Устанавливаем зависимости с legacy-peer-deps
+RUN npm install --legacy-peer-deps
+
+# Копируем исходный код
 COPY . .
+
+# Собираем приложение
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
-FROM nginx:1.21.0-alpine
+# Production stage - используем простой сервер на Node.js
+FROM node:18-alpine
 
-# Copy the build output from the build stage
-COPY --from=build /app/build /usr/share/nginx/html
+WORKDIR /app
 
-# Expose port 80
-EXPOSE 80
+# Устанавливаем serve для раздачи статических файлов и curl для healthcheck
+RUN npm install -g serve && \
+    apk add --no-cache curl
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Копируем собранное приложение
+COPY --from=builder /app/dist ./dist
+
+# Настройка переменной окружения для слушания на всех интерфейсах
+ENV HOST=0.0.0.0
+
+EXPOSE 3000
+
+# Запускаем сервер для раздачи статических файлов
+CMD ["serve", "-s", "dist", "-l", "3000"]

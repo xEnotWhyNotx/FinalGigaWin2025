@@ -1,0 +1,71 @@
+# Backend Docker образ с поддержкой SSL/HTTPS
+FROM python:3.9-slim
+
+# Установка необходимых системных пакетов
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование файла зависимостей
+COPY requirements.txt .
+
+# Установка Python зависимостей
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Создание директорий
+RUN mkdir -p /app/data /app/configs /app/models /app/ssl
+
+# Создание self-signed сертификата для внутреннего использования
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /app/ssl/key.pem -out /app/ssl/cert.pem \
+    -subj "/C=RU/ST=Moscow/L=Moscow/O=GigaWin/CN=gigawin.unicorns-group.ru" \
+    -addext "subjectAltName=DNS:gigawin.unicorns-group.ru,DNS:backend,DNS:localhost,DNS:10.8.0.17,IP:127.0.0.1,IP:10.8.0.17"
+
+# Копирование всех Python файлов
+COPY app.py .
+COPY alert_controller.py .
+COPY consumption_loader.py .
+COPY small_leakage_model.py .
+COPY user_auth.py .
+COPY alert_integration.py .
+COPY telegram_bot.py .
+COPY telegram_commands.py .
+COPY init_db.py .
+COPY run_telegram_bot.py .
+
+# Копирование моделей и данных
+COPY models/ ./models/
+COPY data/ ./data/
+
+# Создание конфигурационных файлов
+RUN echo '{"env": "production"}' > /app/configs/app_config.json
+
+# Переменные окружения для SSL
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_ENV=production
+ENV FLASK_APP=app.py
+ENV SSL_ENABLED=true
+ENV SSL_CERT_PATH=/app/ssl/cert.pem
+ENV SSL_KEY_PATH=/app/ssl/key.pem
+
+# Создание скрипта запуска с поддержкой HTTP и HTTPS
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "Starting backend initialization..."' >> /app/start.sh && \
+    echo 'python init_db.py || echo "Database initialization completed or skipped"' >> /app/start.sh && \
+    echo 'echo "Checking SSL_ENABLED environment variable..."' >> /app/start.sh && \
+    echo 'if [ "$SSL_ENABLED" = "true" ]; then' >> /app/start.sh && \
+    echo '  echo "Starting Gunicorn server with SSL..."' >> /app/start.sh && \
+    echo '  exec gunicorn --bind 0.0.0.0:5001 --keyfile /app/ssl/key.pem --certfile /app/ssl/cert.pem --workers 2 --timeout 120 app:app' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '  echo "Starting Gunicorn server with HTTP..."' >> /app/start.sh && \
+    echo '  exec gunicorn --bind 0.0.0.0:5001 --workers 2 --timeout 120 app:app' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Команда запуска
+CMD ["/app/start.sh"]

@@ -1,0 +1,78 @@
+# Автономный Docker образ Telegram Bot с встроенными конфигурациями и данными
+# Без использования volumes - все файлы включены в образ
+FROM python:3.9-slim
+
+# Установка необходимых системных пакетов для работы с файлами
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование файла зависимостей
+COPY requirements.txt .
+
+# Установка Python зависимостей
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Создание директорий
+RUN mkdir -p /app/data /app/configs /app/models /app/logs
+
+# Копирование всех необходимых файлов для бота
+COPY telegram_bot.py .
+COPY telegram_commands.py .
+COPY alert_controller.py .
+COPY consumption_loader.py .
+COPY alert_integration.py .
+COPY user_auth.py .
+COPY small_leakage_model.py .
+COPY run_telegram_bot.py .
+
+# Копирование моделей (если нужны для ML предсказаний в боте)
+COPY models/ ./models/
+
+# Копирование данных (все файлы включаются в образ)
+COPY data/ ./data/
+
+# Создание продакшен конфигурации Telegram бота
+RUN echo '{' > /app/configs/telegram_config.json && \
+    echo '  "bot_token": "5677930100:AAG8BzMciBM1DvQvWdk6X66AYezXWsZ3vVw",' >> /app/configs/telegram_config.json && \
+    echo '  "api_base_url": "https://backend:5001",' >> /app/configs/telegram_config.json && \
+    echo '  "check_interval_seconds": 300,' >> /app/configs/telegram_config.json && \
+    echo '  "max_alerts_per_message": 5' >> /app/configs/telegram_config.json && \
+    echo '}' >> /app/configs/telegram_config.json
+
+# Создание дополнительной конфигурации для разработки
+RUN echo '{' > /app/configs/config-dev.json && \
+    echo '  "env": "production",' >> /app/configs/config-dev.json && \
+    echo '  "debug": false,' >> /app/configs/config-dev.json && \
+    echo '  "database_url": "sqlite:///app/data/hak2025.db"' >> /app/configs/config-dev.json && \
+    echo '}' >> /app/configs/config-dev.json
+
+# Проверка что все файлы данных скопированы корректно
+RUN echo "=== Проверка файлов данных ===" && \
+    echo "Файлы данных:" && \
+    ls -la /app/data/ && \
+    echo "Файлы конфигурации:" && \
+    ls -la /app/configs/ && \
+    echo "Модели:" && \
+    ls -la /app/models/ && \
+    echo "=== Проверка завершена ==="
+
+# Настройка переменных окружения
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+ENV DATA_PATH=/app/data
+ENV CONFIGS_PATH=/app/configs
+
+# Создание пользователя для безопасности
+RUN adduser --disabled-password --gecos '' telegrambot && \
+    chown -R telegrambot:telegrambot /app
+
+# Переключение на пользователя telegrambot
+USER telegrambot
+
+# Команда запуска Telegram бота
+CMD ["python", "run_telegram_bot.py"]

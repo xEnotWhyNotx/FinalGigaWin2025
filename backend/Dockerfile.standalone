@@ -1,0 +1,68 @@
+# Автономный Docker образ Backend с встроенными конфигурациями и данными
+FROM python:3.9-slim
+
+# Установка необходимых системных пакетов
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование файла зависимостей
+COPY requirements.txt .
+
+# Установка Python зависимостей
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Создание директорий
+RUN mkdir -p /app/data /app/configs /app/models
+
+# Копирование всех Python файлов
+COPY app.py .
+COPY alert_controller.py .
+COPY consumption_loader.py .
+COPY small_leakage_model.py .
+COPY user_auth.py .
+COPY alert_integration.py .
+COPY telegram_bot.py .
+COPY telegram_commands.py .
+COPY init_db.py .
+COPY run_telegram_bot.py .
+
+# Копирование моделей
+COPY models/ ./models/
+
+# Копирование данных (базы данных будут пересоздаваться при каждом запуске)
+COPY data/ ./data/
+
+# Создание продакшен конфигурации Telegram бота
+RUN echo '{' > /app/configs/telegram_config.json && \
+    echo '  "bot_token": "5677930100:AAG8BzMciBM1DvQvWdk6X66AYezXWsZ3vVw",' >> /app/configs/telegram_config.json && \
+    echo '  "api_base_url": "http://backend:5001",' >> /app/configs/telegram_config.json && \
+    echo '  "check_interval_seconds": 300,' >> /app/configs/telegram_config.json && \
+    echo '  "max_alerts_per_message": 5' >> /app/configs/telegram_config.json && \
+    echo '}' >> /app/configs/telegram_config.json
+
+# Создание продакшен конфигурации для основного приложения
+RUN echo '{"env": "production"}' > /app/configs/app_config.json
+
+# Открытие порта
+EXPOSE 5001
+
+# Настройка переменных окружения
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_ENV=production
+ENV FLASK_APP=app.py
+
+# Создание скрипта запуска с инициализацией БД
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "Starting backend initialization..."' >> /app/start.sh && \
+    echo 'python init_db.py || echo "Database initialization completed or skipped"' >> /app/start.sh && \
+    echo 'echo "Starting Gunicorn server..."' >> /app/start.sh && \
+    echo 'exec gunicorn --bind 0.0.0.0:5001 --workers 2 --timeout 120 app:app' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Команда запуска
+CMD ["/app/start.sh"]

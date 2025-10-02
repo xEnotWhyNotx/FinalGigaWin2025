@@ -24,9 +24,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class TelegramBot:
-    def __init__(self, token: str, api_base_url: str = "http://localhost:5001"):
+    def __init__(self, token: str, api_base_url: str = "https://localhost:5001"):
         self.token = token
         self.api_base_url = api_base_url
+        # Отключаем проверку SSL для самоподписанных сертификатов внутри Docker сети
+        self.ssl_verify = False
         self.application = None
         self.ctp_to_unom_map = None
         self.consumption_df = None
@@ -270,7 +272,7 @@ class TelegramBot:
             await query.edit_message_text("🔄 Получение алертов...")
             
             # Получаем алерты через API бэкенда
-            response = requests.get(f"{self.api_base_url}/alerts", timeout=10)
+            response = requests.get(f"{self.api_base_url}/alerts", timeout=10, verify=self.ssl_verify)
             
             if response.status_code != 200:
                 await query.edit_message_text("❌ Ошибка при получении алертов от API.")
@@ -322,7 +324,7 @@ class TelegramBot:
             
         try:
             # Получаем алерты через API бэкенда
-            response = requests.get(f"{self.api_base_url}/alerts", timeout=10)
+            response = requests.get(f"{self.api_base_url}/alerts", timeout=10, verify=self.ssl_verify)
             
             if response.status_code != 200:
                 await update.message.reply_text("❌ Ошибка при получении алертов от API.")
@@ -436,7 +438,7 @@ class TelegramBot:
             lon = float(context.args[1])
             
             # Используем API для поиска дома по координатам
-            response = requests.get(f"{self.api_base_url}/house_by_coordinates", 
+            response = requests.get(f"{self.api_base_url}/house_by_coordinates", verify=self.ssl_verify, 
                                   params={'lat': lat, 'lon': lon, 'timestamp': datetime.now().isoformat()})
             
             if response.status_code == 200:
@@ -540,7 +542,7 @@ class TelegramBot:
             # Проверяем доступность API
             api_status = "🟢 Доступен"
             try:
-                response = requests.get(f"{self.api_base_url}/alerts", timeout=5)
+                response = requests.get(f"{self.api_base_url}/alerts", timeout=5, verify=self.ssl_verify)
                 if response.status_code != 200:
                     api_status = "🟡 Частично доступен"
             except:
@@ -599,7 +601,7 @@ class TelegramBot:
         """Периодическая проверка и отправка новых алертов"""
         try:
             # Получаем алерты через API бэкенда
-            response = requests.get(f"{self.api_base_url}/alerts", timeout=10)
+            response = requests.get(f"{self.api_base_url}/alerts", timeout=10, verify=self.ssl_verify)
             
             if response.status_code != 200:
                 logger.error(f"Ошибка при получении алертов от API: {response.status_code}")
@@ -636,7 +638,7 @@ class TelegramBot:
             password = context.args[1]
             
             # Авторизуемся через API
-            auth_response = requests.post(f"{self.api_base_url}/auth/login", 
+            auth_response = requests.post(f"{self.api_base_url}/auth/login", verify=self.ssl_verify, 
                                         json={
                                             "email": email,
                                             "password": password,
@@ -698,7 +700,7 @@ class TelegramBot:
                 return
             
             # Регистрируемся через API
-            reg_response = requests.post(f"{self.api_base_url}/auth/register", 
+            reg_response = requests.post(f"{self.api_base_url}/auth/register", verify=self.ssl_verify, 
                                        json={
                                            "email": email,
                                            "password": password,
@@ -768,7 +770,7 @@ class TelegramBot:
             session_token = self.authorized_users[user_id]['session_token']
             
             # Выходим через API
-            requests.post(f"{self.api_base_url}/auth/logout",
+            requests.post(f"{self.api_base_url}/auth/logout", verify=self.ssl_verify,
                          headers={'Authorization': f'Bearer {session_token}'})
             
             # Удаляем из локального кэша

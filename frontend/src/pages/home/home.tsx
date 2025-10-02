@@ -10,7 +10,7 @@ import { YandexMap } from '../../components/map/map';
 
 import { useHome } from './home-hook';
 import { HOME_TEXTS, MAP_SETTINGS } from './home.constant';
-import styles from './Home.module.css';
+import styles from './home.module.css';
 import { AlertsPanel } from '../../components/alerts-panel/alerts-panel';
 import type { Alert } from '../../shared/types/alert.types';
 import { SidePanel } from '../../components/side-panel/side-panel';
