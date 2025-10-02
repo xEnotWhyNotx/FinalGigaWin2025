@@ -1,0 +1,176 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.mainContainer {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.mapContainer {
+  flex: 1;
+  height: 100%;
+}
+
+.sidePanel {
+  width: 350px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.errorOverlay {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 175px); /* С учетом панели */
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  text-align: center;
+  max-width: 300px;
+}
+
+.errorTitle {
+  color: #d32f2f;
+  margin-bottom: 10px;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.errorNote {
+  font-size: 12px;
+  color: #999;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border-radius: 3px;
+}
+
+.legendColorCircle {
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+/* Новые стили для легенды */
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.legendItem:last-child {
+  margin-bottom: 0;
+}
+
+.legendColor {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legendColorCircle {
+  width: 16px;
+  height: 16px;
+  margin-right: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendColorLine {
+  width: 20px;
+  height: 3px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+
+/* Home.module.css */
+.mainContainer {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Левая панель - фиксированная ширина */
+.sidePanel {
+  height: 100%;
+  overflow-y: auto;
+  background: white;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+}
+
+/* Центральная область - карта занимает всё оставшееся пространство */
+.mapContainer {
+  flex: 1;
+  position: relative;
+  min-width: 0; /* Важно для flexbox */
+}
+
+/* Правая панель - фиксированная ширина */
+/* AlertsPanel уже имеет свои стили позиционирования */
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+}
+
+.errorOverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.errorTitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #d32f2f;
+}
+
+.errorMessage {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #666;
+}
+
+.errorNote {
+  font-size: 12px;
+  color: #999;
+}

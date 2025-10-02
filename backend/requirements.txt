@@ -1,0 +1,23 @@
+# Web Framework
+Flask>=2.0.0
+flask-cors>=4.0.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+catboost>=1.2.0
+
+# Database
+openpyxl>=3.1.0
+
+# HTTP Requests (for testing)
+requests>=2.31.0
+
+# Production server
+gunicorn>=20.0.0
+
+# API Documentation (optional)
+flasgger>=0.9.5
+
+# Telegram Bot
+python-telegram-bot>=20.0

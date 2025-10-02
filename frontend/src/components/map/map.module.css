@@ -1,0 +1,72 @@
+.mapContainer {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  max-height: 650px;
+  border-radius: 20px;
+}
+
+.legendPanel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  font-size: 12px;
+}
+
+.legendTitle {
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.legendColorSquare {
+  width: 15px;
+  height: 15px;
+  background-color: #3388ff40;
+  border: 2px solid #3388ff;
+  margin-right: 8px;
+  border-radius: 3px;
+}
+
+.legendColorCircle {
+  width: 12px;
+  height: 12px;
+  background-color: #ff6b35;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.dataInfoPanel {
+  position: absolute;
+  background-color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  font-size: 12px;
+}
+
+.dataInfoTop {
+  top: 10px;
+  left: 10px;
+  font-size: 14px;
+}
+
+.dataInfoBottom {
+  bottom: 40px;
+  left: 10px;
+}
+
+.dataInfoText {
+  color: #666;
+}
