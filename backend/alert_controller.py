@@ -88,6 +88,12 @@ ALERT_METADATA = {
         "alert_message": "В МКД по адресу {address} обнаружена маленькая утечка воды",
         "dispatcher_actions": "Проверить состояние водопроводных систем в доме, возможно требуется профилактический ремонт"
     },
+    6: {
+        "level": "Высокий",
+        "interpretation": "Нештатная работа насосов ЦТП. В результате аварии на трубе насосы работают в нештатном режиме и требуется их остановить до устранения проблемы",
+        "alert_message": "Кавитация насоса на ЦТП {ctp_name}. Нештатная работа насосов",
+        "dispatcher_actions": "Уведомить Мосводоканал. Создать заявку на вызов аварийной службы"
+    },
 }
 
 # --- Configuration ---
@@ -102,6 +108,8 @@ CONFIG = {
     'small_leakage_excedents_threshold': 0.3,  # Minimum leakage value for small leak detection (alert 5)
     'water_deficit_threshold': 0.5,  # Threshold for water deficit (real < predicted * 0.5 means deficit)
     'small_leakage_threshold': 0.5,  # ML model threshold for small leak detection (alert 5)
+    'pump_cavitation_multiplier': 1.5,  # Multiplier for pump cavitation detection (alert 6) - consumption > max_predicted * multiplier
+    'pump_cavitation_lookback_hours': 24,  # Hours to look back for max predicted consumption (alert 6)
 }
 
 # --- Data Structures ---
@@ -594,6 +602,55 @@ async def check_alert_condition_5(unom: int, ctp_id: str, consumption_df: pd.Dat
         print(f"Error in check_alert_condition_5: {e}")
         return None
 
+async def check_alert_condition_6(ctp_id: str, consumption_df: pd.DataFrame,
+                                 ctp_to_unom_map: Dict[str, List[int]], 
+                                 alert_time: datetime, excedents_df: pd.DataFrame = None) -> Optional[Dict[str, Any]]:
+    """
+    Alert Condition 6: Нештатная работа насосов ЦТП (кавитация).
+    Срабатывает когда расход воды на ЦТП * multiplier > максимального прогнозируемого расхода за последние 24 часа
+    """
+    try:
+        # Get last 24 hours of CTP consumption data to find max predicted
+        lookback_start = alert_time - timedelta(hours=CONFIG['pump_cavitation_lookback_hours'])
+        ctp_data_24h = await get_consumption_for_period_ctp(ctp_id, lookback_start, alert_time, consumption_df, ctp_to_unom_map, excedents_df=excedents_df)
+        
+        if ctp_data_24h.empty:
+            return None
+        
+        # Find maximum predicted consumption in the last 24 hours
+        max_predicted_consumption = ctp_data_24h['прогноз'].max()
+        
+        if max_predicted_consumption <= 0:
+            return None
+        
+        # Get current consumption
+        latest_ctp_consumption = ctp_data_24h['реальный'].iloc[-1]
+        
+        # Calculate dynamic threshold
+        dynamic_threshold = max_predicted_consumption * CONFIG['pump_cavitation_multiplier']
+        
+        # Check if current consumption exceeds the dynamic threshold
+        if latest_ctp_consumption <= dynamic_threshold:
+            return None
+        
+        # All conditions met - generate alert (CTP-level only, no specific house)
+        return {
+            'alert_id': 6,
+            'ctp_id': ctp_id,
+            'ctp_name': get_ctp_name(ctp_id),
+            'timestamp': alert_time.isoformat(),
+            'consumption_data': {
+                'ctp_consumption': float(latest_ctp_consumption),
+                'max_predicted_24h': float(max_predicted_consumption),
+                'dynamic_threshold': float(dynamic_threshold),
+                'multiplier': CONFIG['pump_cavitation_multiplier']
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error in check_alert_condition_6: {e}")
+        return None
+
 async def check_alert_condition_8(ctp_id: str, consumption_df: pd.DataFrame,
                                  ctp_to_unom_map: Dict[str, List[int]], 
                                  alert_time: datetime, excedents_df: pd.DataFrame = None) -> Optional[Dict[str, Any]]:
@@ -748,9 +805,15 @@ async def generate_alerts(ctp_to_unom_map: Dict[str, List[int]],
                     print(f"Error checking alerts for house {unom}: {e}")
                     continue
         
-        # Check CTP-level alerts (condition 8)
+        # Check CTP-level alerts (conditions 6 and 8)
         for ctp_id in ctp_to_unom_map.keys():
             try:
+                # Check condition 6 (pump cavitation)
+                alert_6 = await check_alert_condition_6(ctp_id, consumption_df, ctp_to_unom_map, alert_time, excedents_df)
+                if alert_6:
+                    alerts.append(create_alert_object(alert_6))
+                
+                # Check condition 8 (CTP leak)
                 alert_8 = await check_alert_condition_8(ctp_id, consumption_df, ctp_to_unom_map, alert_time, excedents_df)
                 if alert_8:
                     alerts.append(create_alert_object(alert_8))
@@ -774,7 +837,8 @@ def create_alert_object(alert_data: Dict[str, Any]) -> Dict[str, Any]:
     # Format the alert message
     alert_message = metadata['alert_message'].format(
         address=alert_data.get('address', 'Неизвестный адрес'),
-        ctp=alert_data.get('ctp_name', 'Неизвестный ЦТП')
+        ctp=alert_data.get('ctp_name', 'Неизвестный ЦТП'),
+        ctp_name=alert_data.get('ctp_name', 'Неизвестный ЦТП')
     )
     
     # Determine entity type and ID
