@@ -50,7 +50,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
 
   // Состояния для модалок
   const [openSendTeam, setOpenSendTeam] = useState(false);
-  const [openMarkResolved, setOpenMarkResolved] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   // Обновляем фильтры при изменении даты
   const handleDateTimeChange = (date: Date | null) => {
@@ -92,11 +92,15 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
   console.log(alerts, 'hello')
 
   // Обработчики модалок
-  const handleOpenSendTeam = () => setOpenSendTeam(true);
-  const handleCloseSendTeam = () => setOpenSendTeam(false);
+  const handleOpenSendTeam = (alert: Alert) => {
+    setSelectedAlert(alert);
+    setOpenSendTeam(true);
+  };
   
-  const handleOpenMarkResolved = () => setOpenMarkResolved(true);
-  const handleCloseMarkResolved = () => setOpenMarkResolved(false);
+  const handleCloseSendTeam = () => {
+    setOpenSendTeam(false);
+    setSelectedAlert(null);
+  };
 
   // Статистика по приоритетам
   const highPriorityCount = alerts.filter(alert => 
@@ -318,9 +322,29 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                        {alert.alert_message || 'Нет описания'}
-                      </Typography>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5, flex: 1 }}>
+                          {alert.alert_message || 'Нет описания'}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          startIcon={<Warning sx={{ fontSize: 16 }} />}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Предотвращаем всплытие события
+                            handleOpenSendTeam(alert);
+                          }}
+                          sx={{ 
+                            ml: 1,
+                            minWidth: 'auto',
+                            px: 1,
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Бригада
+                        </Button>
+                      </Box>
                     }
                     secondary={
                       <Box>
@@ -373,31 +397,7 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
           )}
         </Box>
 
-        {/* Действия */}
-        {alerts.length > 0 && (
-          <Paper elevation={0} sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                startIcon={<Warning />}
-                onClick={handleOpenSendTeam}
-              >
-                Отправить бригаду
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                fullWidth
-                startIcon={<CheckCircle />}
-                onClick={handleOpenMarkResolved}
-              >
-                Отметить решенным
-              </Button>
-            </Stack>
-          </Paper>
-        )}
+        {/* Убраны общие кнопки действий */}
 
         {/* Модалка "Отправить бригаду" */}
         <Dialog
@@ -412,37 +412,24 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Запрос на отправку бригады успешно отправлен. 
-              Бригада будет направлена к объекту в ближайшее время.
+              {selectedAlert ? (
+                <>
+                  Запрос на отправку бригады для алерта успешно отправлен. 
+                  <br /><br />
+                  <strong>Объект:</strong> {selectedAlert.object_id}
+                  <br />
+                  <strong>Проблема:</strong> {selectedAlert.alert_message}
+                  <br /><br />
+                  Бригада будет направлена к объекту в ближайшее время.
+                </>
+              ) : (
+                'Запрос на отправку бригады успешно отправлен. Бригада будет направлена к объекту в ближайшее время.'
+              )}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseSendTeam} variant="contained">
               Понятно
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Модалка "Отметить решенным" */}
-        <Dialog
-          open={openMarkResolved}
-          onClose={handleCloseMarkResolved}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircle color="success" />
-            Проблема решена
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Алерт успешно отмечен как решенный. 
-              Статус проблемы обновлен в системе.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseMarkResolved} variant="contained">
-              ОК
             </Button>
           </DialogActions>
         </Dialog>

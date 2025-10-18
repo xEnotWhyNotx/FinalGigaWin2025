@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Scatter,
 } from 'recharts';
@@ -29,7 +28,7 @@ interface EfficiencyChartProps {
 }
 
 export const EfficiencyChart: React.FC<EfficiencyChartProps> = ({ data }) => {
-  console.log('EfficiencyChart data:', data); // Для отладки
+  console.log('EfficiencyChart data:', data);
 
   if (!data || !data.pump_curve || !data.current_state) {
     return (
@@ -48,14 +47,38 @@ export const EfficiencyChart: React.FC<EfficiencyChartProps> = ({ data }) => {
     kpd: pump_curve.pump_kpd[index],
   }));
 
-  const currentPoint = [{
-    consumption: current_state.consumption,
-    kpd: current_state.kpd,
-    name: 'Текущее состояние',
-  }];
+  // Кастомный тултип для EfficiencyChart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      // Фильтруем payload, оставляя только нужные данные
+      const filteredPayload = payload.filter((entry: any) => 
+        entry.dataKey === 'kpd' && (entry.name === 'КПД насоса' || entry.name === 'Текущее состояние')
+      );
+
+      return (
+        <Paper sx={{ p: 2, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            📊 Расход: <strong>{label.toFixed(1)} м³/ч</strong>
+          </Typography>
+          {filteredPayload.map((entry: any, index: number) => (
+            <Typography 
+              key={index} 
+              variant="body2" 
+              sx={{ color: entry.color }}
+            >
+              {entry.name === 'КПД насоса' && '🔧 '}
+              {entry.name === 'Текущее состояние' && '⚡ '}
+              <strong>{entry.name}:</strong> {entry.value.toFixed(1)} %
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   return (
-    <Box sx={{ height: '100%' }}>
+       <Box sx={{ height: '100%' }}>
       <Paper sx={{ p: 1, mb: 1, bgcolor: 'success.light', color: 'white' }}>
         <Stack direction="row" spacing={3} justifyContent="center">
           <Typography variant="subtitle1">
@@ -72,30 +95,30 @@ export const EfficiencyChart: React.FC<EfficiencyChartProps> = ({ data }) => {
 
       <Box sx={{ height: 'calc(100% - 60px)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={pumpData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ComposedChart margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" />
             <XAxis 
               dataKey="consumption"
-              label={{ value: 'Расход, м³/ч', position: 'insideBottom', offset: -5 }}
+              label={{ 
+                value: 'Расход, м³/ч', 
+                position: 'insideBottom',
+                offset: 0,
+                style: { transform: 'translateY(10px)' } 
+              }}
               type="number"
             />
             <YAxis 
-              label={{ value: 'КПД, %', angle: -90, position: 'insideLeft' }}
+              label={{ 
+                value: 'КПД, %', 
+                angle: -90, 
+                position: 'insideLeft',
+              }}
               type="number"
             />
-            <Tooltip 
-              formatter={(value: number, name: string) => {
-                if (name === 'kpd') {
-                  return [`${value.toFixed(2)} %`, 'КПД'];
-                } else if (name === 'consumption') {
-                  return [`${value.toFixed(2)} м³/ч`, 'Расход'];
-                }
-                return [value, name];
-              }}
-            />
-            <Legend />
+            <Tooltip content={<CustomTooltip />} />
+            {/* Убрал Legend */}
             <Line
-              type="monotone"
+              data={pumpData}
               dataKey="kpd"
               stroke="#82ca9d"
               strokeWidth={3}
@@ -104,7 +127,7 @@ export const EfficiencyChart: React.FC<EfficiencyChartProps> = ({ data }) => {
               activeDot={{ r: 6 }}
             />
             <Scatter
-              data={currentPoint}
+              data={[{ consumption: current_state.consumption, kpd: current_state.kpd }]}
               dataKey="kpd"
               fill="#ff7300"
               name="Текущее состояние"

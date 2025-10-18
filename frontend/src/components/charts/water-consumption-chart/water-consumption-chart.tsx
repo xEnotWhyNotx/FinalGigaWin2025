@@ -21,7 +21,7 @@ interface WaterConsumptionChartProps {
 }
 
 export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ data }) => {
-  console.log('WaterConsumptionChart data:', data); // Для отладки
+  console.log('WaterConsumptionChart data:', data);
 
   if (!data || !data.timestamp || data.timestamp.length === 0) {
     return (
@@ -33,7 +33,6 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
     );
   }
 
-  // Проверяем, что все массивы имеют одинаковую длину
   const isValidData = data.predicted && data.real && data.timestamp && 
                      data.predicted.length === data.real.length && 
                      data.real.length === data.timestamp.length;
@@ -53,12 +52,35 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
 
   const chartData = data.timestamp.map((timestamp, index) => ({
     timestamp,
-    // Правильное соответствие: Факт из real, Прогноз из predicted
-    Факт: data.real[index],       // реальные данные
-    Прогноз: data.predicted[index], // прогнозируемые данные
-    // Форматируем время - берем только часы
+    Факт: data.real[index],
+    Прогноз: data.predicted[index],
     time: new Date(timestamp.replace(' ', 'T')).getHours().toString().padStart(2, '0'),
   }));
+
+  // Кастомный тултип для WaterConsumptionChart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <Paper sx={{ p: 2, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            🕒 Время: <strong>{label}:00</strong>
+          </Typography>
+          {payload.map((entry: any, index: number) => (
+            <Typography 
+              key={index} 
+              variant="body2" 
+              sx={{ color: entry.color }}
+            >
+              {entry.name === 'Факт' && '📊 '}
+              {entry.name === 'Прогноз' && '🔮 '}
+              <strong>{entry.name}:</strong> {entry.value.toFixed(1)} м³/ч
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   return (
     <Box sx={{ height: '100%' }}>
@@ -72,24 +94,20 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
           </Typography>
         </Stack>
       </Paper>
-
+      
       <Box sx={{ height: 'calc(100% - 60px)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}> {/* Увеличил bottom margin */}
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis 
               dataKey="time"
-              label={{ value: 'Время, ч', position: 'insideBottom', offset: 0 }}
+              label={{ value: 'Время, ч', position: 'insideBottom', offset: 0, style: { transform: 'translate(0, 10px)' } }}
             />
             <YAxis 
               label={{ value: 'Расход, м³/ч', angle: -90, position: 'insideLeft' }}
             />
-            <Tooltip 
-              formatter={(value: number) => [`${value.toFixed(2)} м³/ч`, '']}
-              labelFormatter={(label) => `Время: ${label}:00`}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36}/>
-            {/* "Прогноз" - фиолетовая линия с данными из data.predicted */}
             <Line
               type="monotone"
               dataKey="Прогноз"
@@ -98,7 +116,6 @@ export const WaterConsumptionChart: React.FC<WaterConsumptionChartProps> = ({ da
               dot={{ fill: '#8884d8', strokeWidth: 1, r: 2 }}
               activeDot={{ r: 4 }}
             />
-            {/* "Факт" - зеленая линия с данными из data.real */}
             <Line
               type="monotone"
               dataKey="Факт"

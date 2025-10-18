@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Scatter,
 } from 'recharts';
@@ -29,7 +28,7 @@ interface PowerChartProps {
 }
 
 export const PowerChart: React.FC<PowerChartProps> = ({ data }) => {
-  console.log('PowerChart data:', data); // Для отладки
+  console.log('PowerChart data:', data);
 
   if (!data || !data.pump_curve || !data.current_state) {
     return (
@@ -48,11 +47,35 @@ export const PowerChart: React.FC<PowerChartProps> = ({ data }) => {
     power: pump_curve.pump_power[index],
   }));
 
-  const currentPoint = [{
-    consumption: current_state.consumption,
-    power: current_state.power,
-    name: 'Текущее состояние',
-  }];
+  // Кастомный тултип для PowerChart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      // Фильтруем payload, оставляя только нужные данные
+      const filteredPayload = payload.filter((entry: any) => 
+        entry.dataKey === 'power' && (entry.name === 'Мощность насоса' || entry.name === 'Текущее состояние')
+      );
+
+      return (
+        <Paper sx={{ p: 2, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            📊 Расход: <strong>{label.toFixed(1)} м³/ч</strong>
+          </Typography>
+          {filteredPayload.map((entry: any, index: number) => (
+            <Typography 
+              key={index} 
+              variant="body2" 
+              sx={{ color: entry.color }}
+            >
+              {entry.name === 'Мощность насоса' && '⚡ '}
+              {entry.name === 'Текущее состояние' && '🔴 '}
+              <strong>{entry.name}:</strong> {entry.value.toFixed(1)} кВт
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   return (
     <Box sx={{ height: '100%' }}>
@@ -69,30 +92,30 @@ export const PowerChart: React.FC<PowerChartProps> = ({ data }) => {
 
       <Box sx={{ height: 'calc(100% - 60px)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={pumpData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ComposedChart margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" />
             <XAxis 
               dataKey="consumption"
-              label={{ value: 'Расход, м³/ч', position: 'insideBottom', offset: -5 }}
+              label={{ 
+                value: 'Расход, м³/ч', 
+                position: 'insideBottom',
+                offset: 0,
+                style: { transform: 'translateY(10px)' } 
+              }}
               type="number"
             />
             <YAxis 
-              label={{ value: 'Мощность, кВт', angle: -90, position: 'insideLeft' }}
+              label={{ 
+                value: 'Мощность, кВт', 
+                angle: -90, 
+                position: 'insideLeft',
+              }}
               type="number"
             />
-            <Tooltip 
-              formatter={(value: number, name: string) => {
-                if (name === 'power') {
-                  return [`${value.toFixed(2)} кВт`, 'Мощность'];
-                } else if (name === 'consumption') {
-                  return [`${value.toFixed(2)} м³/ч`, 'Расход'];
-                }
-                return [value, name];
-              }}
-            />
-            <Legend />
+            <Tooltip content={<CustomTooltip />} />
+            {/* Убрал Legend */}
             <Line
-              type="monotone"
+              data={pumpData}
               dataKey="power"
               stroke="#ff7300"
               strokeWidth={3}
@@ -101,7 +124,7 @@ export const PowerChart: React.FC<PowerChartProps> = ({ data }) => {
               activeDot={{ r: 6 }}
             />
             <Scatter
-              data={currentPoint}
+              data={[{ consumption: current_state.consumption, power: current_state.power }]}
               dataKey="power"
               fill="#8884d8"
               name="Текущее состояние"

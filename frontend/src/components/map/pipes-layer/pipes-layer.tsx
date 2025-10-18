@@ -11,7 +11,32 @@ import { findAlertForObject, getSeverityColor, mapServerLevelToSeverity } from '
 interface PipesLayerProps {
   features: GeoJSONFeature[];
   opacity: number;
+  onObjectHover?: (feature: GeoJSONFeature, event: any) => void; // ДОБАВИТЬ event
 }
+
+// Функция для создания пульсирующей SVG иконки
+const createPulsingIcon = (color: string) => {
+  const svg = `
+    <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <style>
+          @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(0.8); opacity: 1; }
+          }
+          .pulsing-circle {
+            animation: pulse 2s infinite;
+            transform-origin: center;
+          }
+        </style>
+      </defs>
+      <circle cx="15" cy="15" r="12" fill="${color}" opacity="0.3" class="pulsing-circle"/>
+      <circle cx="15" cy="15" r="6" fill="${color}"/>
+    </svg>
+  `;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+};
 
 export const createPipeBalloonContent = (properties: any): string => {
   if (!properties) return 'Труба';
@@ -32,7 +57,7 @@ export const createPipeBalloonContent = (properties: any): string => {
   `;
 };
 
-export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity }) => {
+export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity, onObjectHover  }) => {
   const { filterByAlerts, alerts } = useSelector((state: RootState) => state.alerts);
   
   if (!features.length) return null;
@@ -45,7 +70,6 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity }) => 
         const output = feature.properties?.output;
         const alertForPipe = findAlertForObject(alerts, output);
         
-        // Фильтрация по алертам
         if (filterByAlerts && !alertForPipe) {
           return null;
         }
@@ -53,8 +77,7 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity }) => 
         const pipeId = feature.properties?.pipe_id ?? `idx-${index}`;
         const key = `pipe-${pipeId}-${index}`;
         
-        // Если есть алерт и фильтр включен, добавляем пульсацию
-        const hasAlert = filterByAlerts && alertForPipe;
+        const hasAlert = !!alertForPipe;
         const severity = alertForPipe ? mapServerLevelToSeverity(alertForPipe.level) : 'medium';
         const pulseColor = getSeverityColor(severity);
 
@@ -63,13 +86,11 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity }) => 
             ([lng, lat]) => [lat, lng] as [number, number]
           );
 
-          // Находим середину трубы для пульсации
           const midIndex = Math.floor(coordinates.length / 2);
           const centerCoords = coordinates[midIndex];
 
           return (
             <React.Fragment key={key}>
-              {/* Основной Polyline */}
               <Polyline
                 geometry={coordinates}
                 properties={{
@@ -82,21 +103,25 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity }) => 
                   strokeOpacity: opacity,
                   cursor: 'pointer'
                 }}
+                 onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ДОБАВИТЬ ЭТУ СТРОКУ
               />
               
-              {/* Пульсирующий круг для алертов */}
               {hasAlert && (
                 <Placemark
                   geometry={centerCoords}
                   options={{
-                    preset: 'islands#circleIcon',
-                    iconColor: pulseColor,
-                    iconGlyph: 'circle',
-                    zIndex: 1
+                    iconLayout: 'default#image',
+                    iconImageHref: createPulsingIcon(pulseColor),
+                    iconImageSize: [30, 30],
+                    iconImageOffset: [-15, -15],
+                    zIndex: 1000,
+                    hasBalloon: false,
+                    hasHint: true,
                   }}
                   properties={{
                     hintContent: `Алерт: ${alertForPipe.level || 'Неизвестный уровень'}`,
                   }}
+                  onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                 />
               )}
             </React.Fragment>

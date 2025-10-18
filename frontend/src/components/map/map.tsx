@@ -15,10 +15,11 @@ import { LegendPanel } from './legend-panel/legend-panel';
 import { DataInfoPanel } from './data-info-panel/data-info-panel';
 import { useCTPPressureMutation } from '../../shared/hooks/use-ctp-pressure/use-ctp-pressure-mutation';
 import { useNavigate } from 'react-router';
+import { ObjectTooltip } from '../object-tooltip/object-tooltip';
 
 export const YandexMap = forwardRef<any, YandexMapProps>(({
   housesData,
-  ctpData, // Переименовал ctpData в ctpGeoData чтобы избежать конфликта
+  ctpData,
   pipesData,
   center = MAP_CONSTANTS.DEFAULT_CENTER,
   zoom = MAP_CONSTANTS.DEFAULT_ZOOM,
@@ -30,6 +31,11 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
   showDataInfo = true
 }, ref) => {
   const [mapReady, setMapReady] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<GeoJSONFeature | null>(null);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<'house' | 'ctp' | 'pipe'>('house');
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  
   const mapInstanceRef = useRef<any>(null);
   
   const { 
@@ -39,23 +45,38 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
     hasHousesData, 
     hasCTPData,
     hasPipesData 
-  } = useMap(housesData, ctpData, pipesData); // Используем исходное ctpData здесь
+  } = useMap(housesData, ctpData, pipesData);
 
   const navigate = useNavigate();
-  // Хук мутации на верхнем уровне карты
-  const { mutate: fetchCTPPressure, data: ctpPressureData, error } = useCTPPressureMutation(); // Переименовал data в ctpPressureData
+  const { mutate: fetchCTPPressure, data: ctpPressureData, error } = useCTPPressureMutation();
 
-  // Обработчик клика по ЦТП (передаем в CTPLayer)
+  // Обработчик наведения на объект
+  const handleObjectHover = (feature: GeoJSONFeature, type: 'house' | 'ctp' | 'pipe', event: any) => {
+    // Получаем координаты мыши
+    const mouseX = event.get('clientX');
+    const mouseY = event.get('clientY');
+    
+    setSelectedFeature(feature);
+    setSelectedType(type);
+    setTooltipPosition({ x: mouseX, y: mouseY });
+    setTooltipOpen(true);
+  };
+
+  // Обработчик клика по ЦТП (для навигации)
   const handleCTPClick = (feature: GeoJSONFeature) => {
     const ctpId = feature.properties?.ctp;
     const properties = feature.properties;
     
     if (!ctpId) return;
 
-    // Передаем properties через state навигации
     navigate(`/ctp/${encodeURIComponent(ctpId)}`, { 
       state: { properties } 
     });
+  };
+
+  const handleCloseTooltip = () => {
+    setTooltipOpen(false);
+    setSelectedFeature(null);
   };
 
   // Логируем данные когда они приходят
@@ -70,6 +91,24 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
       console.log('❌ Ошибка загрузки:', error);
     }
   }, [error]);
+
+  useEffect(() => {
+  const handleMapClick = () => {
+    if (tooltipOpen) {
+      setTooltipOpen(false);
+    }
+  };
+
+  if (mapInstanceRef.current) {
+    mapInstanceRef.current.events.add('click', handleMapClick);
+  }
+
+  return () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.events.remove('click', handleMapClick);
+    }
+  };
+}, [tooltipOpen]);
 
   // Используем useImperativeHandle для доступа к методам карты
   useImperativeHandle(ref, () => ({
@@ -133,24 +172,39 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
           onLoad={handleMapLoad}
           instanceRef={mapInstanceRef}
         >
-          {mapReady && (
-            <>
-              <PipesLayer features={uniquePipes} opacity={pipesOpacity} />
-              <HousesLayer features={uniqueHouses} opacity={housesOpacity} />
-              <CTPLayer 
-                features={uniqueCTP} 
-                opacity={ctpOpacity}
-                onCTPClick={handleCTPClick} // Передаем обработчик
-              />
-            </>
-          )}
+{mapReady && (
+  <>
+    <PipesLayer 
+      features={uniquePipes} 
+      opacity={pipesOpacity}
+      onObjectHover={(feature, event) => handleObjectHover(feature, 'pipe', event)} // ДОБАВИТЬ event
+    />
+    <HousesLayer 
+      features={uniqueHouses} 
+      opacity={housesOpacity}
+      onObjectHover={(feature, event) => handleObjectHover(feature, 'house', event)} // ДОБАВИТЬ event
+    />
+    <CTPLayer 
+      features={uniqueCTP} 
+      opacity={ctpOpacity}
+      onCTPClick={handleCTPClick}
+      onObjectHover={(feature, event) => handleObjectHover(feature, 'ctp', event)} // ДОБАВИТЬ event
+    />
+  </>
+)}
         </Map>
       </YMaps>
 
-      <LegendPanel 
-        show={showLegend} 
-        hasPipes={hasPipesData} 
+      {/* Модалка с информацией об объекте */}
+      <ObjectTooltip
+        open={tooltipOpen}
+        onClose={handleCloseTooltip}
+        feature={selectedFeature}
+        type={selectedType}
+        position={tooltipPosition}
       />
+
+      <LegendPanel show={showLegend} hasPipes={hasPipesData} />
       
       <DataInfoPanel
         show={showDataInfo}
@@ -162,7 +216,7 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
         show={showDataInfo && (hasHousesData || hasPipesData)}
         position="bottom"
         housesCount={housesData?.features?.length}
-        ctpCount={ctpData?.features?.length} // Используем исходное ctpData
+        ctpCount={ctpData?.features?.length}
         pipesCount={pipesData?.features?.length}
       />
     </div>

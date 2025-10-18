@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Scatter,
 } from 'recharts';
@@ -66,6 +65,32 @@ export const PressureChart: React.FC<PressureChartProps> = ({ data }) => {
     type: 'current',
   }];
 
+  // Кастомный тултип для PressureChart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <Paper sx={{ p: 2, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            📊 Расход: <strong>{label.toFixed(1)} м³/ч</strong>
+          </Typography>
+          {payload.map((entry: any, index: number) => (
+            <Typography 
+              key={index} 
+              variant="body2" 
+              sx={{ color: entry.color }}
+            >
+              {entry.name === 'Насос' && '💧 '}
+              {entry.name === 'Труба' && '📈 '}
+              {entry.name === 'Текущее состояние' && '⚡ '}
+              <strong>{entry.name}:</strong> {entry.value.toFixed(1)} м вод. ст.
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
+
   return (
     <Box sx={{ height: '100%' }}>
       <Paper sx={{ p: 1, mb: 1, bgcolor: 'primary.light', color: 'white' }}>
@@ -81,26 +106,29 @@ export const PressureChart: React.FC<PressureChartProps> = ({ data }) => {
 
       <Box sx={{ height: 'calc(100% - 60px)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ComposedChart margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" />
             <XAxis 
               dataKey="consumption"
               type="number"
-              label={{ value: 'Расход, м³/ч', position: 'insideBottom', offset: -5 }}
+              label={{ 
+                value: 'Расход, м³/ч', 
+                position: 'insideBottom',
+                offset: 0,
+                style: { transform: 'translateY(10px)' } 
+              }}
               domain={[0, 'dataMax + 50']}
             />
             <YAxis 
-              label={{ value: 'Напор, м вод. ст.', angle: -90, position: 'insideLeft' }}
+              label={{ 
+                value: 'Напор, м вод. ст.', 
+                angle: -90, 
+                position: 'insideLeft',
+              }}
               domain={[0, 'dataMax + 10']}
             />
-            <Tooltip 
-              formatter={(value: number, name: string) => {
-                const unit = name === 'pressure' ? ' м вод. ст.' : ' м³/ч';
-                const label = name === 'pressure' ? 'Напор' : 'Расход';
-                return [`${value.toFixed(2)}${unit}`, label];
-              }}
-            />
-            <Legend />
+            <Tooltip content={<CustomTooltip />} />
+            {/* Убрал Legend */}
             {/* Кривая насоса */}
             <Line
               data={pumpData}

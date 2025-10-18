@@ -283,27 +283,49 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
               </Box>
             </Stack>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <Stack spacing={1}>
-              <Typography variant="subtitle1" fontWeight="bold">
-                📈 Текущее состояние системы
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                <Chip 
-                  label={`В работе: ${systemState.pumps_working || 0} насосов`}
-                  size="small"
-                  variant="outlined"
-                  sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                />
-                <Chip 
-                  label={`Уд. мощность: ${systemState.unit_power?.toFixed(2) || '0'} кВт`}
-                  size="small"
-                  variant="outlined"
-                  sx={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'white' }}
-                />
-              </Box>
-            </Stack>
-          </Grid>
+<Grid item xs={12} md={6}>
+  <Stack spacing={1}>
+    <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white' }}>
+      📈 Текущее состояние системы
+    </Typography>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      <Chip 
+        label={`В работе: ${systemState.pumps_working || 0} насосов`}
+        size="small"
+        variant="filled"
+        sx={{ 
+          backgroundColor: 'rgba(76, 175, 80, 0.9)',
+          color: 'white',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          padding: '6px 8px',
+          height: 'auto',
+          minWidth: '120px',
+          '& .MuiChip-label': {
+            padding: '4px 6px'
+          }
+        }}
+      />
+      <Chip 
+        label={`Уд. мощность: ${systemState.unit_power?.toFixed(2) || '0'} кВт`}
+        size="small"
+        variant="filled"
+        sx={{ 
+          backgroundColor: 'rgba(33, 150, 243, 0.9)',
+          color: 'white',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          padding: '6px 8px',
+          height: 'auto',
+          minWidth: '120px',
+          '& .MuiChip-label': {
+            padding: '4px 6px'
+          }
+        }}
+      />
+    </Box>
+  </Stack>
+</Grid>
         </Grid>
       </Paper>
 

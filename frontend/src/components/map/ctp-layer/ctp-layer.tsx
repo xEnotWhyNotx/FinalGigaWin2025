@@ -12,9 +12,34 @@ interface CTPLayerProps {
   features: GeoJSONFeature[];
   opacity: number;
   onCTPClick: (feature: GeoJSONFeature) => void;
+ onObjectHover?: (feature: GeoJSONFeature, event: any) => void; // ДОБАВИТЬ event
 }
 
-export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClick }) => {
+// Функция для создания пульсирующей SVG иконки
+const createPulsingIcon = (color: string) => {
+  const svg = `
+    <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <style>
+          @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(0.8); opacity: 1; }
+          }
+          .pulsing-circle {
+            animation: pulse 2s infinite;
+            transform-origin: center;
+          }
+        </style>
+      </defs>
+      <circle cx="15" cy="15" r="12" fill="${color}" opacity="0.3" class="pulsing-circle"/>
+      <circle cx="15" cy="15" r="6" fill="${color}"/>
+    </svg>
+  `;
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+};
+
+export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClick, onObjectHover  }) => {
   const { filterByAlerts, alerts } = useSelector((state: RootState) => state.alerts);
   
   if (!features.length) return null;
@@ -27,7 +52,6 @@ export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClic
         const ctpId = feature.properties?.ctp;
         const alertForCTP = findAlertForObject(alerts, ctpId);
         
-        // Фильтрация по алертам
         if (filterByAlerts && !alertForCTP) {
           return null;
         }
@@ -39,14 +63,12 @@ export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClic
           const [lng, lat] = feature.geometry.coordinates as [number, number];
           const coordinates: [number, number] = [lat, lng];
 
-          // Если есть алерт и фильтр включен, добавляем пульсацию
-          const hasAlert = filterByAlerts && alertForCTP;
+          const hasAlert = !!alertForCTP;
           const severity = alertForCTP ? mapServerLevelToSeverity(alertForCTP.level) : 'medium';
           const pulseColor = getSeverityColor(severity);
 
           return (
             <React.Fragment key={key}>
-              {/* Основной Placemark */}
               <Placemark
                 geometry={coordinates}
                 properties={{
@@ -62,21 +84,25 @@ export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClic
                   iconCaptionMaxWidth: 200
                 }}
                 onClick={() => onCTPClick(feature)}
+                onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
               />
               
-              {/* Пульсирующий круг для алертов */}
               {hasAlert && (
                 <Placemark
                   geometry={coordinates}
                   options={{
-                    preset: 'islands#circleIcon', // Используем стандартную иконку круга
-                    iconColor: pulseColor,
-                    iconGlyph: 'circle', // Добавляем глиф круга
-                    zIndex: 1
+                    iconLayout: 'default#image',
+                    iconImageHref: createPulsingIcon(pulseColor),
+                    iconImageSize: [30, 30],
+                    iconImageOffset: [-15, -15],
+                    zIndex: 1000,
+                    hasBalloon: false,
+                    hasHint: true,
                   }}
                   properties={{
                     hintContent: `Алерт: ${alertForCTP.level || 'Неизвестный уровень'}`,
                   }}
+                  onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                 />
               )}
             </React.Fragment>
