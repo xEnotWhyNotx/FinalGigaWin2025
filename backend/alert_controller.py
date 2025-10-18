@@ -824,6 +824,14 @@ async def generate_alerts(ctp_to_unom_map: Dict[str, List[int]],
     except Exception as e:
         print(f"Error in generate_alerts: {e}")
     
+    # Sort alerts by level priority: Высокий (High) > Средний (Medium) > Низкий (Low)
+    level_priority = {
+        'Высокий': 0,
+        'Средний': 1,
+        'Низкий': 2
+    }
+    alerts.sort(key=lambda alert: level_priority.get(alert.get('level', 'Низкий'), 999))
+    
     return alerts
 
 def create_alert_object(alert_data: Dict[str, Any]) -> Dict[str, Any]:
