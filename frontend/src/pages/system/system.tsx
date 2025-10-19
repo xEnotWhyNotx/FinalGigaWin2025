@@ -10,8 +10,9 @@ import styles from './system.module.css'
 import { useState } from 'react';
 import { SidePanel } from '../../components/side-panel/side-panel';
 import { AlertsPanel } from '../../components/alerts-panel/alerts-panel';
+import { SettingsPanel } from '../../components/settings-panel/settings-panel';
 
-type TabType = 'alerts' | 'dashboard';
+type TabType = 'alerts' | 'dashboard' | 'settings';
 
 export const System = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -19,7 +20,7 @@ export const System = () => {
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
   };
-
+  
   const {     
     housesData,
     ctpData,
@@ -208,6 +209,38 @@ export const System = () => {
           >
             Дашборд
           </Button>
+        <Button
+            fullWidth
+            variant={activeTab === 'settings' ? 'contained' : 'text'}
+            onClick={() => handleTabChange('settings')}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 'bold',
+              fontSize: '0.9rem',
+              py: 1.5,
+              borderRadius: 2,
+              mx: 0.5,
+              bgcolor: activeTab === 'settings' ? 'primary.main' : 'transparent',
+              color: activeTab === 'settings' ? 'white' : 'text.primary',
+              '&:hover': {
+                bgcolor: activeTab === 'settings' ? 'primary.dark' : 'action.hover',
+              },
+              transition: 'all 0.3s ease'
+            }}
+            startIcon={
+              <Box 
+                sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%',
+                  bgcolor: activeTab === 'settings' ? 'white' : 'success.main',
+                  opacity: activeTab === 'settings' ? 1 : 0.7
+                }} 
+              />
+            }
+          >
+            Настройки
+          </Button>
         </Box>
 
         {/* Контент табов */}
@@ -244,6 +277,12 @@ export const System = () => {
                 texts={HOME_TEXTS}
                 constants={MAP_SETTINGS}
               />
+            </Box>
+          )}
+
+          {activeTab === 'settings' && (
+            <Box sx={{ p: 0 }}>
+              <SettingsPanel />
             </Box>
           )}
         </Box>
