@@ -12,6 +12,7 @@ interface HousesLayerProps {
   features: GeoJSONFeature[];
   opacity: number;
   onObjectHover?: (feature: GeoJSONFeature, event: any) => void; // ДОБАВИТЬ event
+  onObjectClick?: (feature: GeoJSONFeature) => void; // Добавляем обработчик клика
 }
 
 // Функция для создания пульсирующей SVG иконки
@@ -38,7 +39,7 @@ const createPulsingIcon = (color: string) => {
   return 'data:image/svg+xml;base64,' + btoa(svg);
 };
 
-export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onObjectHover }) => {
+export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onObjectHover, onObjectClick }) => {
   const { filterByAlerts, alerts } = useSelector((state: RootState) => state.alerts);
   
   if (!features.length) return null;
@@ -87,6 +88,7 @@ export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onO
                     balloonContent: createHouseBalloonContent(feature.properties)
                   }}
                   onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
+                  onClick={() => onObjectClick?.(feature)} // Добавляем обработчик клика
                 />
                 
                 {hasAlert && (
@@ -134,6 +136,7 @@ export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onO
                     opacity: opacity
                   }}
                   onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
+                  onClick={() => onObjectClick?.(feature)} // Добавляем обработчик клика
                 />
                 
                 {hasAlert && (

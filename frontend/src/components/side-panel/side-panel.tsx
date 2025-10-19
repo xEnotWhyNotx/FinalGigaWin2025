@@ -34,7 +34,16 @@ import {
 import styles from './side-panel.module.css'
 
 interface SidePanelProps {
-  mapSettings: any;
+  mapSettings: {
+    mapType: string; // ← исправляем тип
+    showHouses: boolean;
+    showCTP: boolean;
+    showPipes: boolean;
+    housesOpacity: number;
+    ctpOpacity: number;
+    pipesOpacity: number;
+    zoom: number;
+  };
   housesData: any;
   ctpData: any;
   pipesData: any;
@@ -63,6 +72,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ctp: ctpData?.features?.length || 0,
     pipes: pipesData?.features?.length || 0
   };
+
+  console.log(mapSettings.mapType, 'MAP TYPE')
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

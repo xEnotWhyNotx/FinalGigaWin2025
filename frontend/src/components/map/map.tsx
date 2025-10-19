@@ -62,16 +62,26 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
     setTooltipOpen(true);
   };
 
-  // Обработчик клика по ЦТП (для навигации)
-  const handleCTPClick = (feature: GeoJSONFeature) => {
-    const ctpId = feature.properties?.ctp;
+  // Универсальный обработчик клика для ЦТП и домов
+  const handleObjectClick = (feature: GeoJSONFeature, type: 'house' | 'ctp' | 'pipe') => {
     const properties = feature.properties;
     
-    if (!ctpId) return;
+    if (type === 'ctp' || type === 'house') {
+      // Для дома используем UNOM, для ЦТП - ctp
+      const objectId = type === 'house' ? properties?.UNOM : properties?.ctp;
+      
+      if (!objectId) return;
 
-    navigate(`/ctp/${encodeURIComponent(ctpId)}`, { 
-      state: { properties } 
-    });
+      // Определяем тип объекта для навигации
+      const objectType = type === 'house' ? 'house' : 'ctp';
+      
+      navigate(`/ctp/${encodeURIComponent(objectId)}`, { 
+        state: { 
+          properties,
+          objectType // Передаем тип объекта
+        } 
+      });
+    }
   };
 
   const handleCloseTooltip = () => {
@@ -140,6 +150,7 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
 
   // Эффект для обновления типа карты
   useEffect(() => {
+    console.log(mapType, 'MAP TYPE')
     if (mapInstanceRef.current && mapReady) {
       mapInstanceRef.current.setType(mapType);
     }
@@ -183,11 +194,12 @@ export const YandexMap = forwardRef<any, YandexMapProps>(({
       features={uniqueHouses} 
       opacity={housesOpacity}
       onObjectHover={(feature, event) => handleObjectHover(feature, 'house', event)} // ДОБАВИТЬ event
+      onObjectClick={(feature) => handleObjectClick(feature, 'house')} // Добавляем клик
     />
     <CTPLayer 
       features={uniqueCTP} 
       opacity={ctpOpacity}
-      onCTPClick={handleCTPClick}
+      onCTPClick={(feature) => handleObjectClick(feature, 'ctp')} // Обновляем на универсальный обработчик
       onObjectHover={(feature, event) => handleObjectHover(feature, 'ctp', event)} // ДОБАВИТЬ event
     />
   </>

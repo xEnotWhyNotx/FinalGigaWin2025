@@ -88,6 +88,7 @@ export const System = () => {
       >
         <div className={styles.mapContainer}>
           <YandexMap
+            key={mapSettings.mapType}
             ref={mapRef}
             housesData={mapSettings.showHouses ? housesData : null}
             ctpData={mapSettings.showCTP ? ctpData : null}
@@ -172,7 +173,7 @@ export const System = () => {
               />
             }
           >
-            Alerts
+            Оповещения
           </Button>
           
           <Button
@@ -205,7 +206,7 @@ export const System = () => {
               />
             }
           >
-            Dashboard
+            Дашборд
           </Button>
         </Box>
 

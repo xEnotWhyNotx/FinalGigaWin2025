@@ -106,7 +106,7 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity, onObj
                  onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ДОБАВИТЬ ЭТУ СТРОКУ
               />
               
-              {hasAlert && (
+              {/* {hasAlert && (
                 <Placemark
                   geometry={centerCoords}
                   options={{
@@ -123,7 +123,7 @@ export const PipesLayer: React.FC<PipesLayerProps> = ({ features, opacity, onObj
                   }}
                   onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                 />
-              )}
+              )} */}
             </React.Fragment>
           );
         }
