@@ -102,6 +102,7 @@ export const CTPLayer: React.FC<CTPLayerProps> = ({ features, opacity, onCTPClic
                   properties={{
                     hintContent: `Алерт: ${alertForCTP.level || 'Неизвестный уровень'}`,
                   }}
+                  onClick={() => onCTPClick(feature)}
                   onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                 />
               )}

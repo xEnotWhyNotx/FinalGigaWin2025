@@ -106,6 +106,7 @@ export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onO
                     properties={{
                       hintContent: `Алерт: ${alertForHouse.level || 'Неизвестный уровень'}`,
                     }}
+                    onClick={() => onObjectClick?.(feature)} // Добавляем обработчик клика
                     onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                   />
                 )}
@@ -154,6 +155,7 @@ export const HousesLayer: React.FC<HousesLayerProps> = ({ features, opacity, onO
                     properties={{
                       hintContent: `Алерт: ${alertForHouse.level || 'Неизвестный уровень'}`,
                     }}
+                    onClick={() => onObjectClick?.(feature)} // Добавляем обработчик клика
                     onMouseEnter={(event: any) => onObjectHover?.(feature, event)} // ПЕРЕДАЕМ event
                   />
                 )}
