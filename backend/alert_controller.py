@@ -112,7 +112,7 @@ CONFIG = {
     'min_consumption_for_leak': 5.0,  # Minimum consumption to consider for leak detection
     'min_leakage_threshold': 0.5,  # Minimum leakage value to consider significant (from excedents data)
     'small_leakage_excedents_threshold': 0.3,  # Minimum leakage value for small leak detection (alert 5)
-    'water_deficit_threshold': 0.5,  # Threshold for water deficit (real < predicted * 0.5 means deficit)
+    'water_deficit_threshold': 0.8,  # Threshold for water deficit (real < predicted * 0.5 means deficit)
     'small_leakage_threshold': 0.5,  # ML model threshold for small leak detection (alert 5)
     'pump_cavitation_multiplier': 1.5,  # Multiplier for pump cavitation detection (alert 6) - consumption > max_predicted * multiplier
     'pump_cavitation_lookback_hours': 24,  # Hours to look back for max predicted consumption (alert 6)
