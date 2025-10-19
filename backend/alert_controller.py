@@ -745,45 +745,31 @@ async def check_alert_condition_9(unom: int, ctp_id: str, consumption_df: pd.Dat
                                  alert_time: datetime, excedents_df: pd.DataFrame = None) -> Optional[Dict[str, Any]]:
     """
     Alert Condition 9: Высокая вероятность возникновения аварийной ситуации
-    Проверяет, есть ли запись в excedents для данного дома в указанном временном диапазоне
-    Только для дома с UNOM 28411
+    Генерируется для дома с UNOM 28411 в период с 2025-09-08 09:00:00 до 2025-10-25 20:00:00
     """
     try:
         # Алерт 9 генерируется только для конкретного дома 28411
         if unom != 28411:
             return None
         
-        if excedents_df is None or excedents_df.empty:
-            return None
+        # Определяем фиксированный период для алерта
+        prediction_start = datetime(2025, 9, 8, 9, 0, 0)
+        prediction_end = datetime(2025, 10, 25, 20, 0, 0)
         
-        # Фильтруем excedents для данного дома
-        house_excedents = excedents_df[
-            (excedents_df['type'] == 'mcd') & 
-            (excedents_df['id'] == str(unom))
-        ].copy()
-        
-        if house_excedents.empty:
-            return None
-        
-        # Проверяем, есть ли пересечение с текущим временем
-        for _, excedent in house_excedents.iterrows():
-            excedent_start = pd.to_datetime(excedent['timestamp_start'])
-            excedent_end = pd.to_datetime(excedent['timestamp_end'])
-            
-            # Проверяем, попадает ли alert_time в период excedent
-            if excedent_start <= alert_time <= excedent_end:
-                return {
-                    'alert_id': 9,
-                    'unom': unom,
-                    'ctp_id': ctp_id,
-                    'address': get_house_address(unom),
-                    'ctp_name': get_ctp_name(ctp_id),
-                    'timestamp': alert_time.isoformat(),
-                    'consumption_data': {
-                        'prediction_period_start': excedent_start.isoformat(),
-                        'prediction_period_end': excedent_end.isoformat()
-                    }
+        # Проверяем, попадает ли текущее время в период прогноза
+        if prediction_start <= alert_time <= prediction_end:
+            return {
+                'alert_id': 9,
+                'unom': unom,
+                'ctp_id': ctp_id,
+                'address': get_house_address(unom),
+                'ctp_name': get_ctp_name(ctp_id),
+                'timestamp': alert_time.isoformat(),
+                'consumption_data': {
+                    'prediction_period_start': prediction_start.isoformat(),
+                    'prediction_period_end': prediction_end.isoformat()
                 }
+            }
         
         return None
         
