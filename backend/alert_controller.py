@@ -94,6 +94,12 @@ ALERT_METADATA = {
         "alert_message": "Кавитация насоса на ЦТП {ctp_name}. Нештатная работа насосов",
         "dispatcher_actions": "Уведомить Мосводоканал. Создать заявку на вызов аварийной службы"
     },
+    9: {
+        "level": "Средний",
+        "interpretation": "Высокая вероятность возникновения аварийной ситуации на основе прогнозной модели",
+        "alert_message": "В МКД по адресу {address} высокая вероятность возникновения аварийной ситуации",
+        "dispatcher_actions": "Провести профилактический осмотр здания и инженерных систем. Подготовить аварийную бригаду"
+    },
 }
 
 # --- Configuration ---
@@ -734,6 +740,57 @@ async def check_alert_condition_8(ctp_id: str, consumption_df: pd.DataFrame,
         print(f"Error in check_alert_condition_8: {e}")
         return None
 
+async def check_alert_condition_9(unom: int, ctp_id: str, consumption_df: pd.DataFrame,
+                                 ctp_to_unom_map: Dict[str, List[int]], 
+                                 alert_time: datetime, excedents_df: pd.DataFrame = None) -> Optional[Dict[str, Any]]:
+    """
+    Alert Condition 9: Высокая вероятность возникновения аварийной ситуации
+    Проверяет, есть ли запись в excedents для данного дома в указанном временном диапазоне
+    Только для дома с UNOM 28411
+    """
+    try:
+        # Алерт 9 генерируется только для конкретного дома 28411
+        if unom != 28411:
+            return None
+        
+        if excedents_df is None or excedents_df.empty:
+            return None
+        
+        # Фильтруем excedents для данного дома
+        house_excedents = excedents_df[
+            (excedents_df['type'] == 'mcd') & 
+            (excedents_df['id'] == str(unom))
+        ].copy()
+        
+        if house_excedents.empty:
+            return None
+        
+        # Проверяем, есть ли пересечение с текущим временем
+        for _, excedent in house_excedents.iterrows():
+            excedent_start = pd.to_datetime(excedent['timestamp_start'])
+            excedent_end = pd.to_datetime(excedent['timestamp_end'])
+            
+            # Проверяем, попадает ли alert_time в период excedent
+            if excedent_start <= alert_time <= excedent_end:
+                return {
+                    'alert_id': 9,
+                    'unom': unom,
+                    'ctp_id': ctp_id,
+                    'address': get_house_address(unom),
+                    'ctp_name': get_ctp_name(ctp_id),
+                    'timestamp': alert_time.isoformat(),
+                    'consumption_data': {
+                        'prediction_period_start': excedent_start.isoformat(),
+                        'prediction_period_end': excedent_end.isoformat()
+                    }
+                }
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error in check_alert_condition_9: {e}")
+        return None
+
 # --- Main Alert Generation Function ---
 
 async def generate_alerts(ctp_to_unom_map: Dict[str, List[int]], 
@@ -766,6 +823,11 @@ async def generate_alerts(ctp_to_unom_map: Dict[str, List[int]],
         for ctp_id, unoms in ctp_to_unom_map.items():
             for unom in unoms[:20]:  # Limit to first 20 houses per CTP for performance
                 try:
+                    # Check condition 9 first (high probability of emergency - predictive)
+                    alert_9 = await check_alert_condition_9(unom, ctp_id, consumption_df, ctp_to_unom_map, alert_time, excedents_df)
+                    if alert_9:
+                        alerts.append(create_alert_object(alert_9))
+                    
                     # Check condition 1
                     alert_1 = await check_alert_condition_1(unom, ctp_id, consumption_df, ctp_to_unom_map, alert_time, excedents_df)
                     if alert_1:
