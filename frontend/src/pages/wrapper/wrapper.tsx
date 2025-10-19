@@ -1,6 +1,5 @@
-import React from 'react';
 import { Outlet, useNavigate } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, IconButton } from '@mui/material';
 import { Logout, AccountCircle } from '@mui/icons-material';
 import { useAuth } from '../../shared/hooks/use-auth';
 import toast from 'react-hot-toast';

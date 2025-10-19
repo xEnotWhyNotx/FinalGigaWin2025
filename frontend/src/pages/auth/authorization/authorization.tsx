@@ -94,6 +94,7 @@ export const Authorization: React.FC = () => {
               helperText={errors.email?.message}
               className={styles.textField}
               autoComplete="username"
+              defaultValue="admin"
               sx={{ 
                 fontFamily: "'Montserrat', 'Arial', sans-serif !important",
                 '& .MuiInputLabel-root': { fontFamily: "'Montserrat', 'Arial', sans-serif !important" },
@@ -121,6 +122,7 @@ export const Authorization: React.FC = () => {
               helperText={errors.password?.message}
               className={styles.textField}
               autoComplete="current-password"
+              defaultValue="admin"
               sx={{ 
                 fontFamily: "'Montserrat', 'Arial', sans-serif !important",
                 '& .MuiInputLabel-root': { fontFamily: "'Montserrat', 'Arial', sans-serif !important" },

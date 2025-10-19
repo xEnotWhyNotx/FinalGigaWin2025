@@ -19,6 +19,10 @@ export const useAuthorization = () => {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: 'admin',
+      password: 'admin'
+    }
   });
 
   const onSubmit = async (data: LoginFormData) => {
