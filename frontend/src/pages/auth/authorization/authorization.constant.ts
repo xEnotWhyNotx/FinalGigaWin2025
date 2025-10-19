@@ -5,7 +5,7 @@ export const AUTH_TEXTS = {
   description: 'Получите доступ к эксклюзивным возможностям нашей платформы',
   formTitle: 'Вход',
   formSubtitle: 'Введите свои данные для входа',
-  emailLabel: 'Email',
+  emailLabel: 'Email или логин',
   passwordLabel: 'Пароль',
   loginButton: 'Войти',
   loadingButton: 'Вход...',

@@ -1,8 +1,48 @@
 /* Authorization.module.css */
+
+/* Глобальные стили для Material-UI компонентов на странице авторизации */
+.wrapper * {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
+}
+
+/* Принудительное применение шрифта к Material-UI компонентам */
+.wrapper .MuiTypography-root,
+.wrapper .MuiTextField-root,
+.wrapper .MuiInputBase-root,
+.wrapper .MuiInputLabel-root,
+.wrapper .MuiFormHelperText-root,
+.wrapper .MuiButton-root {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
+}
+
 .wrapper {
   min-height: 100vh;
   display: flex;
   flex-direction: row;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Простой и элегантный фон */
+.wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  animation: backgroundShift 20s ease-in-out infinite;
+}
+
+@keyframes backgroundShift {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(-5px) translateY(-3px); }
+  50% { transform: translateX(3px) translateY(-5px); }
+  75% { transform: translateX(-3px) translateY(3px); }
 }
 
 @media (max-width: 900px) {
@@ -15,9 +55,12 @@
   flex: 1;
   background-image: url('../../../../public/bgMsc.png');
   background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 50%;
+  background-size: cover;
+  background-position: center;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .imageSection::before {
@@ -27,6 +70,13 @@
   left: 0;
   right: 0;
   bottom: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+  animation: fadeIn 2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .imageContent {
@@ -39,27 +89,57 @@
   flex-direction: column;
   justify-content: center;
   height: 100%;
+  text-align: center;
+  animation: slideInLeft 1s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .imageTitle {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   background: linear-gradient(45deg, #fff 30%, #e0e0e0 90%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
-  font-weight: bold;
+  font-weight: 900 !important;
   margin-bottom: 24px;
-  font-size: 2.5rem;
+  font-size: 3.5rem !important;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 3px !important;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from { text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); }
+  to { text-shadow: 0 4px 20px rgba(255, 255, 255, 0.5); }
 }
 
 .imageSubtitle {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   opacity: 0.9;
   margin-bottom: 16px;
   font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  animation: slideInLeft 1s ease-out 0.3s both;
 }
 
 .imageDescription {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   opacity: 0.8;
   font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  animation: slideInLeft 1s ease-out 0.6s both;
 }
 
 .formSection {
@@ -68,70 +148,150 @@
   align-items: center;
   justify-content: center;
   padding: 32px;
-  background-color: #e6e4ec;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  animation: slideInRight 1s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .formPaper {
-  padding: 32px;
+  padding: 48px;
   width: 100%;
-  max-width: 400px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 450px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Простой hover эффект */
+.formPaper:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .formHeader {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .formTitle {
-  font-weight: bold;
-  color: #1976d2;
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
+  font-weight: 700;
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
   margin-bottom: 8px;
-  font-size: 2rem;
+  font-size: 2.5rem;
+  letter-spacing: 1px;
+}
+
+@keyframes titlePulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
 }
 
 .formSubtitle {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
 }
 
 .textField {
-  margin-bottom: 24px;
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
+  margin-bottom: 0;
+  transition: all 0.3s ease;
+}
+
+.textField .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loginButton {
-  padding: 12px 0;
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
+  padding: 16px 0;
   margin-bottom: 24px;
-  border-radius: 8px;
-  background: linear-gradient(45deg, #1976d2 0%, #2196f3 100%);
+  border-radius: 12px;
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
   border: none;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
 .loginButton:hover {
-  background: linear-gradient(45deg, #1565c0 0%, #1976d2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(45deg, #764ba2 0%, #667eea 100%);
 }
 
-.divider {
-  margin: 24px 0;
+.loginButton:active {
+  transform: translateY(0px);
 }
 
-.dividerText {
-  color: #666;
-  font-size: 0.75rem;
-}
-
-.socialButtons {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.socialButton {
-  border-radius: 8px;
-  text-transform: none;
+.loginButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .footer {
@@ -139,13 +299,70 @@
 }
 
 .footerText {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   color: #666;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
 .registerButton {
+  font-family: 'Montserrat', 'Arial', sans-serif !important;
   text-transform: none;
-  font-weight: bold;
+  font-weight: 600;
+  color: #667eea;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+.registerButton:hover {
+  color: #764ba2;
+  transform: scale(1.05);
+}
+
+.divider {
+  margin: 24px 0;
+  position: relative;
+  animation: fadeInUp 1s ease-out 1.3s both;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ddd, transparent);
+}
+
+.dividerText {
+  color: #666;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.socialButtons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeInUp 1s ease-out 1.5s both;
+}
+
+.socialButton {
+  border-radius: 12px;
+  text-transform: none;
+  flex: 1;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.socialButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 900px) {
@@ -155,10 +372,12 @@
   
   .formSection {
     padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
   }
   
   .formPaper {
-    padding: 24px;
+    padding: 32px;
+    max-width: 100%;
   }
   
   .imageTitle {
@@ -168,11 +387,54 @@
   .imageSubtitle {
     font-size: 1.25rem;
   }
+  
+  .formTitle {
+    font-size: 2rem;
+  }
 }
 
+/* Анимации для состояний загрузки */
+.loading {
+  position: relative;
+}
 
-.form {
-    display: flex;
-    flex-direction: column;
-    row-gap: 15px;
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Анимации для ошибок */
+.errorShake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Анимации для успешного входа */
+.successPulse {
+  animation: successPulse 0.6s ease-in-out;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }

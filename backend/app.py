@@ -584,7 +584,8 @@ def register():
         if not email or not password:
             return jsonify({'error': 'Email и пароль обязательны'}), 400
         
-        if len(password) < 6:
+        # Специальное исключение для пользователя admin
+        if email != 'admin' and len(password) < 6:
             return jsonify({'error': 'Пароль должен содержать минимум 6 символов'}), 400
         
         user_id = auth_manager.create_user(email, password, full_name)
@@ -859,7 +860,40 @@ def health():
         }), 503
 
 
+def ensure_admin_user():
+    """Создает пользователя admin если его нет"""
+    try:
+        users = auth_manager.get_all_users()
+        admin_exists = any(user['email'] == 'admin' for user in users)
+        
+        if not admin_exists:
+            print("🚀 Создание пользователя admin...")
+            user_id = auth_manager.create_user(
+                email='admin',
+                password='admin',
+                full_name='Системный администратор',
+                role='admin'
+            )
+            
+            # Предоставляем права администратора
+            auth_manager.grant_permission(user_id, 'admin_access')
+            auth_manager.grant_permission(user_id, 'view_all_data')
+            auth_manager.grant_permission(user_id, 'manage_users')
+            auth_manager.grant_permission(user_id, 'manage_alerts')
+            
+            print(f"✅ Пользователь admin создан с ID: {user_id}")
+            print("📧 Email: admin")
+            print("🔑 Пароль: admin")
+        else:
+            print("✅ Пользователь admin уже существует")
+            
+    except Exception as e:
+        print(f"⚠️ Не удалось создать пользователя admin: {e}")
+
 if __name__ == '__main__':
+    # Создаем пользователя admin при запуске
+    ensure_admin_user()
+    
     # Для Docker контейнера нужно слушать на всех интерфейсах
     host = os.getenv('FLASK_HOST', '0.0.0.0')
     port = int(os.getenv('FLASK_PORT', 5001))
