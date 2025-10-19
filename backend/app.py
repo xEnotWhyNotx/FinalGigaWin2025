@@ -756,6 +756,80 @@ def get_users():
         return jsonify({'error': 'Ошибка получения списка пользователей'}), 500
 
 
+@app.route('/config/alert_parameters', methods=['GET'])
+def get_alert_parameters():
+    """
+    Получить текущие параметры конфигурации для алертов.
+    """
+    from alert_controller import CONFIG
+    
+    return jsonify({
+        'pump_cavitation_multiplier': {
+            'value': CONFIG['pump_cavitation_multiplier'],
+            'range': {'min': 1.4, 'max': 2.0},
+            'description': 'Multiplier for pump cavitation detection'
+        },
+        'small_leakage_excedents_threshold': {
+            'value': CONFIG['small_leakage_excedents_threshold'],
+            'range': {'min': 0.1, 'max': 5.0},
+            'description': 'Minimum leakage value for small leak detection'
+        }
+    })
+
+@app.route('/config/alert_parameters', methods=['PUT'])
+def update_alert_parameters():
+    """
+    Обновить параметры конфигурации для алертов.
+    
+    Body Parameters:
+        - pump_cavitation_multiplier (float, optional): Range 1.4 to 2.0
+        - small_leakage_excedents_threshold (float, optional): Range 0.1 to 5.0
+    """
+    from alert_controller import CONFIG
+    
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        updated_params = {}
+        
+        # Validate and update pump_cavitation_multiplier
+        if 'pump_cavitation_multiplier' in data:
+            value = float(data['pump_cavitation_multiplier'])
+            if 1.4 <= value <= 2.0:
+                CONFIG['pump_cavitation_multiplier'] = value
+                updated_params['pump_cavitation_multiplier'] = value
+            else:
+                return jsonify({'error': 'pump_cavitation_multiplier must be between 1.4 and 2.0'}), 400
+        
+        # Validate and update small_leakage_excedents_threshold
+        if 'small_leakage_excedents_threshold' in data:
+            value = float(data['small_leakage_excedents_threshold'])
+            if 0.1 <= value <= 5.0:
+                CONFIG['small_leakage_excedents_threshold'] = value
+                updated_params['small_leakage_excedents_threshold'] = value
+            else:
+                return jsonify({'error': 'small_leakage_excedents_threshold must be between 0.1 and 5.0'}), 400
+        
+        if not updated_params:
+            return jsonify({'error': 'No valid parameters provided'}), 400
+        
+        return jsonify({
+            'message': 'Parameters updated successfully',
+            'updated': updated_params,
+            'current_config': {
+                'pump_cavitation_multiplier': CONFIG['pump_cavitation_multiplier'],
+                'small_leakage_excedents_threshold': CONFIG['small_leakage_excedents_threshold']
+            }
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': f'Invalid value format: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Error updating parameters: {str(e)}'}), 500
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint для Docker"""
