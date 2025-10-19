@@ -138,7 +138,7 @@ export const SettingsPanel: FC = () => {
       return () => clearTimeout(timer);
     }
   }, [notification.open, notification.type]);
-  
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
@@ -170,7 +170,7 @@ export const SettingsPanel: FC = () => {
           {/* Pump Cavitation Multiplier */}
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Множитель кавитации насоса
+              Относительный порог расхода для детекции ковитации
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {parameters.pump_cavitation_multiplier.description}
