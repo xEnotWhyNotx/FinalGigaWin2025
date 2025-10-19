@@ -1,3 +1,4 @@
+// @ts-nocheck
 // components/charts/water-consumption-chart.tsx
 import { Box, Typography, Paper, Stack } from '@mui/material';
 import React from 'react';

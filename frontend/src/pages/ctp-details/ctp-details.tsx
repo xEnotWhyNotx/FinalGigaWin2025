@@ -365,13 +365,12 @@ export const CTPDetailsPage: React.FC<CTPDetailsPageProps> = () => {
               <WaterDrop color="primary" />
               <Typography variant="h6" fontWeight="bold">
                 Расход воды
-                {objectType === 'house' && ' (прогноз vs реальный)'}
               </Typography>
             </Stack>
             {consumptionData ? (
               <WaterConsumptionChart 
                 data={consumptionData} 
-                showPrediction={objectType === 'house'}
+                showPrediction={true}
               />
             ) : (
               <Box display="flex" justifyContent="center" alignItems="center" height="100%">

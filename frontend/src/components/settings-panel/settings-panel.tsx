@@ -164,7 +164,7 @@ export const SettingsPanel: FC = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Настройте параметры для системы оповещений о событиях в водоснабжении
       </Typography>
-
+    
       {parameters && (
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Pump Cavitation Multiplier */}
