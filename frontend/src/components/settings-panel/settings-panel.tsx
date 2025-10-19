@@ -19,10 +19,11 @@ import {
 import { 
   Close as CloseIcon, 
   CheckCircle as SuccessIcon,
-  Error as ErrorIcon 
+  Error as ErrorIcon ,
+  CheckCircle,
+  RestartAlt
 } from '@mui/icons-material';
 import { useAlertParameters } from '../../shared/hooks/use-alerts-parameters/useAlertParameters';
-
 
 export const SettingsPanel: FC = () => {
   const { parameters, isLoading, error, updateParameters, isUpdating } = useAlertParameters();
@@ -40,6 +41,9 @@ export const SettingsPanel: FC = () => {
     type: 'success',
     message: '',
   });
+
+  // Отслеживаем отдельно состояние сброса
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleInputChange = (key: string, value: string) => {
     // Разрешаем пустую строку для удобства редактирования
@@ -59,21 +63,31 @@ export const SettingsPanel: FC = () => {
       // Преобразуем строковые значения обратно в числа перед отправкой
       const submitValues: any = {};
       
-      if (typeof formValues.pump_cavitation_multiplier === 'number') {
-        submitValues.pump_cavitation_multiplier = formValues.pump_cavitation_multiplier;
-      } else if (formValues.pump_cavitation_multiplier !== '') {
-        // Если значение не пустое, но не число - используем значение из параметров
-        submitValues.pump_cavitation_multiplier = parameters?.pump_cavitation_multiplier.value;
+      // Для pump_cavitation_multiplier
+      if (formValues.pump_cavitation_multiplier !== undefined && formValues.pump_cavitation_multiplier !== '') {
+        const value = typeof formValues.pump_cavitation_multiplier === 'number' 
+          ? formValues.pump_cavitation_multiplier 
+          : parseFloat(formValues.pump_cavitation_multiplier);
+        
+        if (!isNaN(value)) {
+          submitValues.pump_cavitation_multiplier = value;
+        }
       }
       
-      if (typeof formValues.small_leakage_excedents_threshold === 'number') {
-        submitValues.small_leakage_excedents_threshold = formValues.small_leakage_excedents_threshold;
-      } else if (formValues.small_leakage_excedents_threshold !== '') {
-        submitValues.small_leakage_excedents_threshold = parameters?.small_leakage_excedents_threshold.value;
+      // Для small_leakage_excedents_threshold
+      if (formValues.small_leakage_excedents_threshold !== undefined && formValues.small_leakage_excedents_threshold !== '') {
+        const value = typeof formValues.small_leakage_excedents_threshold === 'number' 
+          ? formValues.small_leakage_excedents_threshold 
+          : parseFloat(formValues.small_leakage_excedents_threshold);
+        
+        if (!isNaN(value)) {
+          submitValues.small_leakage_excedents_threshold = value;
+        }
       }
       
       // Проверяем, есть ли что отправлять
       if (Object.keys(submitValues).length > 0) {
+        console.log('Sending values:', submitValues);
         await updateParameters(submitValues);
         setNotification({
           open: true,
@@ -96,12 +110,38 @@ export const SettingsPanel: FC = () => {
     }
   };
 
-  const handleReset = () => {
-    if (parameters) {
-      setFormValues({
-        pump_cavitation_multiplier: parameters.pump_cavitation_multiplier.value,
-        small_leakage_excedents_threshold: parameters.small_leakage_excedents_threshold.value,
+  const handleReset = async () => {
+    try {
+      console.log('Resetting to default values: 1.5 and 0.3');
+      setIsResetting(true);
+      
+      // Устанавливаем значения по умолчанию в форму
+      const defaultValues = {
+        pump_cavitation_multiplier: 1.5,
+        small_leakage_excedents_threshold: 0.3
+      };
+      
+      // Сначала обновляем форму
+      setFormValues(defaultValues);
+      
+      // Затем отправляем значения по умолчанию на бэкенд
+      await updateParameters(defaultValues);
+      
+      // Показываем уведомление о сбросе
+      setNotification({
+        open: true,
+        type: 'success',
+        message: 'Параметры сброшены до значений по умолчанию!',
       });
+      
+    } catch (err) {
+      setNotification({
+        open: true,
+        type: 'error',
+        message: `Ошибка при сбросе параметров: ${err.message}`,
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -112,16 +152,26 @@ export const SettingsPanel: FC = () => {
   // Получаем отображаемое значение для инпута
   const getDisplayValue = (key: string): string => {
     const value = formValues[key as keyof typeof formValues];
-    if (value === undefined && parameters) {
-      // Если значение не установлено, берем из параметров
+    
+    // Если в форме есть значение - используем его
+    if (value !== undefined && value !== '') {
+      return value.toString();
+    }
+    
+    // Иначе используем значение из параметров
+    if (parameters) {
       return parameters[key as keyof typeof parameters].value.toString();
     }
-    return value?.toString() || '';
+    
+    return '';
   };
 
   // Инициализация формы при загрузке параметров
   useEffect(() => {
     if (parameters && Object.keys(formValues).length === 0) {
+      console.log('Initializing form with parameters from backend:', parameters);
+      
+      // Устанавливаем значения формы из параметров
       setFormValues({
         pump_cavitation_multiplier: parameters.pump_cavitation_multiplier.value,
         small_leakage_excedents_threshold: parameters.small_leakage_excedents_threshold.value,
@@ -138,6 +188,19 @@ export const SettingsPanel: FC = () => {
       return () => clearTimeout(timer);
     }
   }, [notification.open, notification.type]);
+
+  // Добавим отладочную информацию
+  console.log('Current form state:', {
+    formValues,
+    parameters,
+    hasParameters: !!parameters,
+    isUpdating,
+    isResetting,
+    displayValues: {
+      pump: getDisplayValue('pump_cavitation_multiplier'),
+      leakage: getDisplayValue('small_leakage_excedents_threshold')
+    }
+  });
 
   if (isLoading) {
     return (
@@ -170,7 +233,7 @@ export const SettingsPanel: FC = () => {
           {/* Pump Cavitation Multiplier */}
           <Paper elevation={2} sx={{ p: 2 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Относительный порог расхода для детекции ковитации
+              Относительный порог расхода для детекции кавитации
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {parameters.pump_cavitation_multiplier.description}
@@ -220,23 +283,25 @@ export const SettingsPanel: FC = () => {
             <Button 
               variant="outlined" 
               onClick={handleReset}
-              disabled={isUpdating}
+              disabled={isUpdating || isResetting}
+              startIcon={isResetting ? <CircularProgress size={16} /> : <RestartAlt />}
+              color="secondary"
             >
-              Сбросить
+              {isResetting ? 'Сброс...' : 'Сбросить к значениям по умолчанию'}
             </Button>
             <Button 
               variant="contained" 
               onClick={handleSubmit}
-              disabled={isUpdating}
-              startIcon={isUpdating ? <CircularProgress size={16} /> : null}
+              disabled={isUpdating || isResetting}
+              startIcon={isUpdating ? <CircularProgress size={16} /> : <CheckCircle />}
             >
-              {isUpdating ? 'Сохранение...' : 'Сохранить'}
+              {isUpdating ? 'Сохранение...' : 'Сохранить изменения'}
             </Button>
           </Box>
         </Box>
       )}
 
-        {/* Улучшенное модальное окно уведомления */}
+      {/* Улучшенное модальное окно уведомления */}
       <Dialog
         open={notification.open}
         onClose={handleCloseNotification}
@@ -263,21 +328,6 @@ export const SettingsPanel: FC = () => {
           textAlign: 'center',
           position: 'relative'
         }}>
-          {/* <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center',
-            gap: 1
-          }}>
-            {notification.type === 'success' ? (
-              <SuccessIcon sx={{ fontSize: 48, opacity: 0.9 }} />
-            ) : (
-              <ErrorIcon sx={{ fontSize: 48, opacity: 0.9 }} />
-            )}
-            <Typography variant="h5" component="div" sx={{ fontWeight: 'bold', mt: 1 }}>
-              {notification.type === 'success' ? 'Успешно!' : 'Ошибка'}
-            </Typography>
-          </Box> */}
           
           <IconButton
             aria-label="close"
@@ -317,46 +367,23 @@ export const SettingsPanel: FC = () => {
           borderTop: '1px solid',
           borderColor: 'divider'
         }}>
-          {notification.type === 'error' && (
-            <Button 
-              onClick={handleCloseNotification}
-              variant="outlined"
-              size="large"
-              sx={{ 
-                minWidth: 120,
-                borderColor: 'primary.main',
-                color: 'primary.main',
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 'bold',
-                '&:hover': {
-                  borderColor: 'primary.dark',
-                  backgroundColor: 'primary.light',
-                }
-              }}
-            >
-              Закрыть
-            </Button>
-          )}
-          {notification.type === 'success' && (
-            <Button 
-              onClick={handleCloseNotification}
-              variant="contained"
-              size="large"
-              sx={{ 
-                minWidth: 120,
-                backgroundColor: 'primary.main',
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 'bold',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                }
-              }}
-            >
-              Отлично!
-            </Button>
-          )}
+          <Button 
+            onClick={handleCloseNotification}
+            variant="contained"
+            size="large"
+            sx={{ 
+              minWidth: 120,
+              backgroundColor: 'primary.main',
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              }
+            }}
+          >
+            Понятно
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
